@@ -6,7 +6,7 @@ import { IconArrow, IconCheck, IconChevron, IconStar } from "./Icons";
 /* ——————————————————— PACKAGES ——————————————————— */
 export function Pricing({ onChoose }: { onChoose: (packageId: string) => void }) {
   return (
-    <section id="packages" className="relative border-t border-[var(--line-soft)] bg-[rgba(29,24,20,0.4)] py-24 md:py-32">
+    <section id="packages" className="relative border-t border-[var(--line-soft)] bg-[rgba(233,244,251,0.6)] py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHead
           num="04"
@@ -21,12 +21,12 @@ export function Pricing({ onChoose }: { onChoose: (packageId: string) => void })
               <article
                 className={`relative flex h-full flex-col p-8 transition-all duration-400 hover:-translate-y-2 ${
                   p.featured
-                    ? "border border-[var(--amber)] bg-[var(--panel)] shadow-[0_30px_70px_-40px_rgba(224,164,88,0.45)]"
+                    ? "border border-[var(--amber)] bg-[var(--panel)] shadow-[0_30px_70px_-40px_rgba(13,127,194,0.4)]"
                     : "border border-[var(--line-soft)] bg-[var(--panel)] hover:border-[var(--line)]"
                 }`}
               >
                 {p.featured && (
-                  <span className="absolute -top-3.5 left-8 bg-[var(--amber)] px-3 py-1 font-mono text-[10px] tracking-[0.24em] uppercase text-[#1c140a]">
+                  <span className="absolute -top-3.5 left-8 bg-[var(--amber)] px-3 py-1 font-mono text-[10px] tracking-[0.24em] uppercase text-white">
                     Most booked
                   </span>
                 )}
@@ -110,7 +110,7 @@ export function Testimonials() {
 export function Faq() {
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section id="faq" className="relative border-t border-[var(--line-soft)] bg-[rgba(29,24,20,0.4)] py-24 md:py-32">
+    <section id="faq" className="relative border-t border-[var(--line-soft)] bg-[rgba(233,244,251,0.6)] py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
           <div className="lg:sticky lg:top-28 lg:self-start">

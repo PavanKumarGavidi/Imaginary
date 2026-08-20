@@ -20,12 +20,12 @@ import { ScrambleText } from "./ui";
 const STATUS_META: Record<BookingStatus, { label: string; pill: string; dot: string }> = {
   pending: {
     label: "Pending",
-    pill: "border-[var(--amber)]/50 bg-[rgba(224,164,88,0.1)] text-[var(--amber)]",
+    pill: "border-[var(--amber)]/50 bg-[rgba(13,127,194,0.1)] text-[var(--amber)]",
     dot: "bg-[var(--amber)]",
   },
   confirmed: {
     label: "Confirmed",
-    pill: "border-[var(--sage)]/50 bg-[rgba(169,177,139,0.1)] text-[var(--sage)]",
+    pill: "border-[var(--sage)]/50 bg-[rgba(47,138,99,0.1)] text-[var(--sage)]",
     dot: "bg-[var(--sage)]",
   },
   completed: {
@@ -35,7 +35,7 @@ const STATUS_META: Record<BookingStatus, { label: string; pill: string; dot: str
   },
   cancelled: {
     label: "Cancelled",
-    pill: "border-[var(--ember)]/50 bg-[rgba(207,85,51,0.1)] text-[var(--ember)]",
+    pill: "border-[var(--ember)]/50 bg-[rgba(208,91,69,0.1)] text-[var(--ember)]",
     dot: "bg-[var(--ember)]",
   },
 };
@@ -69,13 +69,13 @@ export function LoginPage({ onSuccess, onBack }: { onSuccess: () => void; onBack
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       {/* visual side */}
       <div className="relative hidden overflow-hidden lg:block">
-        <img src={IMG.fashion} alt="Editorial frame from the OBSCURA archive" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(23,19,16,0.94)_8%,rgba(23,19,16,0.35)_55%,rgba(23,19,16,0.6))]" />
+        <img src={IMG.fashion} alt="Editorial frame from the Imagine archive" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(246,250,253,0.97)_8%,rgba(246,250,253,0.82)_55%,rgba(246,250,253,0.93))]" />
         <div className="relative flex h-full flex-col justify-between p-10">
           <div className="flex items-center gap-3">
             <IconAperture width={26} height={26} className="text-[var(--amber)]" />
             <div className="leading-none">
-              <div className="font-display text-lg tracking-[0.12em] text-[var(--ink)]">OBSCURA</div>
+              <div className="font-display text-lg tracking-[0.12em] text-[var(--ink)]">IMAGINE</div>
               <div className="font-mono mt-1 text-[9px] tracking-[0.32em] text-[var(--muted)]">BACK OFFICE</div>
             </div>
           </div>
@@ -159,7 +159,7 @@ export function LoginPage({ onSuccess, onBack }: { onSuccess: () => void; onBack
             <div className="mt-6 border border-dashed border-[var(--line)] bg-[var(--bg2)] p-4">
               <div className="font-mono text-[9px] tracking-[0.3em] uppercase text-[var(--dim)]">Demo access</div>
               <div className="mt-2 font-mono text-xs text-[var(--muted)]">
-                user <span className="text-[var(--amber)]">admin</span> · pass <span className="text-[var(--amber)]">obscura24</span>
+                user <span className="text-[var(--amber)]">admin</span> · pass <span className="text-[var(--amber)]">imagine24</span>
               </div>
             </div>
           </form>
@@ -248,7 +248,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `obscura-bookings-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `imagine-bookings-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast(`Ledger exported — ${filtered.length} booking${filtered.length === 1 ? "" : "s"}.`);
@@ -262,12 +262,12 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
   return (
     <div className="min-h-screen">
       {/* header */}
-      <header className="sticky top-0 z-[70] border-b border-[var(--line-soft)] bg-[rgba(23,19,16,0.9)] backdrop-blur-md">
+      <header className="sticky top-0 z-[70] border-b border-[var(--line-soft)] bg-[rgba(255,255,255,0.92)] backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 md:px-8">
           <div className="flex items-center gap-3">
             <IconAperture width={24} height={24} className="text-[var(--amber)]" />
             <div className="leading-none">
-              <div className="font-display text-lg tracking-[0.12em]">OBSCURA</div>
+              <div className="font-display text-lg tracking-[0.12em]">IMAGINE</div>
               <div className="font-mono mt-1 text-[9px] tracking-[0.32em] text-[var(--muted)]">BACK OFFICE</div>
             </div>
           </div>
@@ -336,7 +336,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                   onClick={() => setFilter(s)}
                   className={`border px-3.5 py-2 font-mono text-[10px] tracking-[0.18em] uppercase transition-all ${
                     active
-                      ? "border-[var(--amber)] bg-[var(--amber)] text-[#1c140a]"
+                      ? "border-[var(--amber)] bg-[var(--amber)] text-white"
                       : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--amber)] hover:text-[var(--ink)]"
                   }`}
                 >
@@ -384,7 +384,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                 {filtered.map((b) => {
                   const pkg = getPackage(b.packageId);
                   return (
-                    <tr key={b.id} className="group border-b border-[var(--line-soft)] transition-colors last:border-0 hover:bg-[rgba(224,164,88,0.035)]">
+                    <tr key={b.id} className="group border-b border-[var(--line-soft)] transition-colors last:border-0 hover:bg-[rgba(13,127,194,0.05)]">
                       <td className="px-5 py-4 font-mono text-xs tracking-[0.14em] text-[var(--amber)]">{b.ref}</td>
                       <td className="px-5 py-4">
                         <div className="font-medium text-[var(--ink)]">{b.name}</div>

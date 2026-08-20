@@ -14,7 +14,7 @@ function RotatingBadge() {
           <path id="obscirc" d="M 60,60 m -46,0 a 46,46 0 1,1 92,0 a 46,46 0 1,1 -92,0" fill="none" />
         </defs>
         <text className="font-mono" fontSize="9.5" letterSpacing="2.6" fill="var(--amber)">
-          <textPath href="#obscirc">BOOK A SESSION · OBSCURA STUDIO · EST. 2011 ·&#160;</textPath>
+          <textPath href="#obscirc">BOOK A SESSION · IMAGINE STUDIO · EST. 2011 ·&#160;</textPath>
         </text>
       </svg>
       <IconAperture className="text-[var(--ink)]" width={22} height={22} />
@@ -34,7 +34,7 @@ export default function Hero() {
   return (
     <section id="top" className="relative overflow-hidden pt-28 md:pt-36">
       {/* shutter flash on arrival */}
-      {!reduced && flash && <div className="flash-overlay pointer-events-none fixed inset-0 z-[85] bg-[var(--ink)]" />}
+      {!reduced && flash && <div className="flash-overlay pointer-events-none fixed inset-0 z-[85] bg-white" />}
 
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <div className="grid items-center gap-14 lg:grid-cols-12 lg:gap-8">
@@ -64,7 +64,7 @@ export default function Hero() {
             </h1>
 
             <p className="mt-8 max-w-xl text-base leading-relaxed text-[var(--muted)] md:text-lg">
-              OBSCURA is a full-service photography studio and working darkroom in Portland’s Pearl District — portraits,
+              Imagine is a full-service photography studio and working darkroom in Portland’s Pearl District — portraits,
               weddings, editorial and product work, lit slowly and retouched by hand under one roof.
             </p>
 
@@ -94,7 +94,7 @@ export default function Hero() {
           {/* ——— right: featured frame ——— */}
           <div className="relative lg:col-span-5">
             <RotatingBadge />
-            <div className="group relative border border-[var(--line)] bg-[var(--panel)] p-3">
+            <div className="group relative border border-[var(--line)] bg-[var(--panel)] p-3 shadow-[0_30px_60px_-35px_rgba(18,42,62,0.35)]">
               {/* viewfinder brackets */}
               <span className="vf-bracket left-0 top-0 border-l-2 border-t-2" />
               <span className="vf-bracket right-0 top-0 border-r-2 border-t-2" />
@@ -108,18 +108,18 @@ export default function Hero() {
                   className="kenburns aspect-[4/3] w-full object-cover"
                   loading="eager"
                 />
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(23,19,16,0.5),transparent_45%)]" />
-                <div className="absolute left-3 top-3 font-mono text-[10px] tracking-[0.2em] text-[var(--ink)]/80">
-                  PORTRAIT 04 — AMBER SERIES
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(18,42,62,0.5),transparent_45%)]" />
+                <div className="absolute left-3 top-3 font-mono text-[10px] tracking-[0.2em] text-[var(--photo-ink)]/90">
+                  PORTRAIT 04 — SKY SERIES
                 </div>
-                <div className="absolute bottom-3 right-3 border border-[var(--ink)]/25 px-2 py-1 font-mono text-[10px] tracking-[0.2em] text-[var(--ink)]/80">
+                <div className="absolute bottom-3 right-3 border border-white/30 px-2 py-1 font-mono text-[10px] tracking-[0.2em] text-[var(--photo-ink)]/90">
                   FR 01/24
                 </div>
               </div>
 
               <div className="flex items-center justify-between px-1 pb-1 pt-3">
                 <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--muted)]">In-house print · 16×20”</span>
-                <span className="font-mono text-[10px] tracking-[0.22em] text-[var(--amber)]">ƒ OBSCURA</span>
+                <span className="font-mono text-[10px] tracking-[0.22em] text-[var(--amber)]">ƒ IMAGINE</span>
               </div>
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function Hero() {
       </div>
 
       {/* ——— genre marquee ——— */}
-      <div className="mt-20 border-y border-[var(--line-soft)] bg-[rgba(29,24,20,0.55)] py-4">
+      <div className="mt-20 border-y border-[var(--line-soft)] bg-[rgba(233,244,251,0.85)] py-4">
         <Marquee>
           {GENRES.map((g, i) => (
             <span key={g} className="mx-5 flex items-center gap-10">

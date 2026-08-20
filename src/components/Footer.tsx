@@ -3,12 +3,12 @@ import { IconAperture, IconInstagram, IconKey, IconMail, IconPhone, IconPin } fr
 
 export default function Footer({ onAdmin }: { onAdmin: () => void }) {
   return (
-    <footer id="contact" className="relative overflow-hidden border-t border-[var(--line-soft)] bg-[rgba(20,16,13,0.75)]">
+    <footer id="contact" className="relative overflow-hidden border-t border-[var(--line-soft)] bg-[rgba(232,243,250,0.85)]">
       <div className="mx-auto max-w-7xl px-5 pt-20 md:px-8">
         {/* giant wordmark */}
         <div aria-hidden="true" className="select-none text-center">
-          <span className="stroke-word font-display block text-[17vw] leading-[0.85] tracking-tight transition-colors duration-700 hover:text-[rgba(241,232,215,0.06)]">
-            OBSCURA
+          <span className="stroke-word font-display block text-[17vw] leading-[0.85] tracking-tight transition-colors duration-700 hover:text-[rgba(13,127,194,0.12)]">
+            IMAGINE
           </span>
         </div>
 
@@ -16,7 +16,7 @@ export default function Footer({ onAdmin }: { onAdmin: () => void }) {
           <div>
             <div className="flex items-center gap-3">
               <IconAperture width={22} height={22} className="text-[var(--amber)]" />
-              <span className="font-display text-lg tracking-[0.12em]">OBSCURA</span>
+              <span className="font-display text-lg tracking-[0.12em]">IMAGINE</span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-[var(--muted)]">
               Photography studio &amp; working darkroom. Portraits, weddings, editorial and product — lit slowly since 2011.

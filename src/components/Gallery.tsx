@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { CATEGORIES, GALLERY } from "../data";
-import type { Category } from "../data";
 import { Reveal, SectionHead } from "./ui";
 import { IconArrowR, IconX } from "./Icons";
 
@@ -53,7 +52,7 @@ export default function Gallery() {
                   onClick={() => setCat(c)}
                   className={`border px-4 py-2 font-mono text-[11px] tracking-[0.18em] uppercase transition-all duration-300 ${
                     isActive
-                      ? "border-[var(--amber)] bg-[var(--amber)] text-[#1c140a]"
+                      ? "border-[var(--amber)] bg-[var(--amber)] text-white"
                       : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--amber)] hover:text-[var(--ink)]"
                   }`}
                 >
@@ -70,29 +69,29 @@ export default function Gallery() {
             <Reveal key={g.id} delay={(i % 3) * 90} className="mb-5 break-inside-avoid">
               <button
                 onClick={() => setLightbox(i)}
-                className="group relative block w-full overflow-hidden border border-[var(--line-soft)] bg-[var(--panel)] text-left"
+                className="group relative block w-full overflow-hidden border border-[var(--line-soft)] bg-[var(--panel)] text-left shadow-[0_18px_40px_-30px_rgba(18,42,62,0.4)]"
               >
                 <div className="relative overflow-hidden">
                   <img
                     src={g.img}
-                    alt={`${g.title} — ${g.cat} photograph by OBSCURA`}
+                    alt={`${g.title} — ${g.cat} photograph by Imagine`}
                     className="w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]"
                     loading="lazy"
                   />
                   {/* frame number */}
-                  <span className="absolute left-3 top-3 border border-[var(--ink)]/20 bg-[rgba(23,19,16,0.55)] px-2 py-1 font-mono text-[10px] tracking-[0.22em] text-[var(--ink)]/85 backdrop-blur-sm">
+                  <span className="absolute left-3 top-3 border border-white/25 bg-[rgba(18,42,62,0.45)] px-2 py-1 font-mono text-[10px] tracking-[0.22em] text-[var(--photo-ink)]/95 backdrop-blur-sm">
                     FR {String(GALLERY.findIndex((x) => x.id === g.id) + 1).padStart(2, "0")}
                   </span>
-                  <span className="chip absolute right-3 top-3 !border-[var(--ink)]/20 bg-[rgba(23,19,16,0.55)] !text-[var(--amber)] backdrop-blur-sm">
+                  <span className="chip absolute right-3 top-3 !border-white/25 bg-[rgba(18,42,62,0.45)] !text-[#8fd0f7] backdrop-blur-sm">
                     {g.cat}
                   </span>
                   {/* hover wash */}
-                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(23,19,16,0.85),transparent_55%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(18,42,62,0.85),transparent_55%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-4 p-4 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                    <div className="font-display text-xl tracking-wide uppercase text-[var(--ink)]">{g.title}</div>
+                    <div className="font-display text-xl tracking-wide uppercase text-white">{g.title}</div>
                     <div className="mt-1 flex items-center justify-between">
-                      <span className="font-mono text-[10px] tracking-[0.16em] text-[var(--muted)]">{g.exif}</span>
-                      <IconArrowR width={16} height={16} className="text-[var(--amber)]" />
+                      <span className="font-mono text-[10px] tracking-[0.16em] text-[var(--photo-ink)]/75">{g.exif}</span>
+                      <IconArrowR width={16} height={16} className="text-[#8fd0f7]" />
                     </div>
                   </div>
                 </div>
@@ -111,7 +110,7 @@ export default function Gallery() {
       {/* ——— lightbox ——— */}
       {active && (
         <div
-          className="fade-in fixed inset-0 z-[88] flex flex-col bg-[rgba(16,13,10,0.96)] backdrop-blur-sm"
+          className="fade-in fixed inset-0 z-[88] flex flex-col bg-[rgba(240,248,253,0.97)] backdrop-blur-sm"
           onClick={() => setLightbox(null)}
           role="dialog"
           aria-modal="true"
@@ -139,7 +138,7 @@ export default function Gallery() {
                 e.stopPropagation();
                 setLightbox((v) => (v === null ? v : (v - 1 + items.length) % items.length));
               }}
-              className="hidden h-12 w-12 shrink-0 items-center justify-center border border-[var(--line)] text-[var(--ink)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] md:flex"
+              className="hidden h-12 w-12 shrink-0 items-center justify-center border border-[var(--line)] bg-white text-[var(--ink)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] md:flex"
               aria-label="Previous frame"
             >
               <IconArrowR className="rotate-180" />
@@ -150,7 +149,7 @@ export default function Gallery() {
                 key={active.id}
                 src={active.img}
                 alt={active.title}
-                className="max-h-[70vh] w-auto max-w-full border border-[var(--line)] object-contain"
+                className="max-h-[70vh] w-auto max-w-full border border-[var(--line)] object-contain shadow-[0_40px_80px_-40px_rgba(18,42,62,0.5)]"
               />
               <figcaption className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
                 <span className="font-display text-lg tracking-wide uppercase text-[var(--ink)]">{active.title}</span>
@@ -163,7 +162,7 @@ export default function Gallery() {
                 e.stopPropagation();
                 setLightbox((v) => (v === null ? v : (v + 1) % items.length));
               }}
-              className="hidden h-12 w-12 shrink-0 items-center justify-center border border-[var(--line)] text-[var(--ink)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] md:flex"
+              className="hidden h-12 w-12 shrink-0 items-center justify-center border border-[var(--line)] bg-white text-[var(--ink)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] md:flex"
               aria-label="Next frame"
             >
               <IconArrowR />
@@ -174,14 +173,14 @@ export default function Gallery() {
           <div className="flex justify-center gap-4 pb-6 md:hidden" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setLightbox((v) => (v === null ? v : (v - 1 + items.length) % items.length))}
-              className="flex h-11 w-11 items-center justify-center border border-[var(--line)] text-[var(--ink)]"
+              className="flex h-11 w-11 items-center justify-center border border-[var(--line)] bg-white text-[var(--ink)]"
               aria-label="Previous frame"
             >
               <IconArrowR className="rotate-180" />
             </button>
             <button
               onClick={() => setLightbox((v) => (v === null ? v : (v + 1) % items.length))}
-              className="flex h-11 w-11 items-center justify-center border border-[var(--line)] text-[var(--ink)]"
+              className="flex h-11 w-11 items-center justify-center border border-[var(--line)] bg-white text-[var(--ink)]"
               aria-label="Next frame"
             >
               <IconArrowR />

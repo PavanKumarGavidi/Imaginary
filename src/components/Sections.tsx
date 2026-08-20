@@ -38,7 +38,7 @@ export function About() {
             <SectionHead num="01" label="The studio" title={<>A darkroom with a day job.</>} />
             <Reveal delay={120}>
               <p className="max-w-xl text-base leading-relaxed text-[var(--muted)] md:text-lg">
-                We started OBSCURA in 2011 with two strobes, a borrowed Rollei and a stubborn belief: that a photograph
+                We started Imagine in 2011 with two strobes, a borrowed Rollei and a stubborn belief: that a photograph
                 should feel like the room did — the heat of the tungsten, the dust in the beam, the second before the laugh.
               </p>
               <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--muted)] md:text-lg">
@@ -64,7 +64,7 @@ export function About() {
                 <div className="overflow-hidden">
                   <img
                     src={IMG.studio}
-                    alt="The OBSCURA studio floor at dusk — camera on tripod, backdrop rolls, warm tungsten light"
+                    alt="The Imagine studio floor — camera on tripod, backdrop rolls, soft daylight"
                     className="aspect-[5/6] w-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.05]"
                     loading="lazy"
                   />
@@ -115,7 +115,7 @@ export function About() {
 /* ——————————————————— SERVICES ——————————————————— */
 export function Services({ onBookSession }: { onBookSession: (session: string) => void }) {
   return (
-    <section id="services" className="relative border-t border-[var(--line-soft)] bg-[rgba(29,24,20,0.4)] py-24 md:py-32">
+    <section id="services" className="relative border-t border-[var(--line-soft)] bg-[rgba(233,244,251,0.6)] py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHead
           num="02"

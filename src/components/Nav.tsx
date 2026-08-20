@@ -24,14 +24,14 @@ export default function Nav({ onAdmin }: { onAdmin: () => void }) {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-[70] transition-all duration-500 ${
-        scrolled ? "border-b border-[var(--line-soft)] bg-[rgba(23,19,16,0.88)] backdrop-blur-md" : "bg-transparent"
+        scrolled ? "border-b border-[var(--line-soft)] bg-[rgba(255,255,255,0.92)] backdrop-blur-md shadow-[0_10px_30px_-20px_rgba(18,42,62,0.3)]" : "bg-transparent"
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8">
         <a href="#top" className="group flex items-center gap-3" onClick={() => setOpen(false)}>
           <IconAperture className="text-[var(--amber)] transition-transform duration-700 group-hover:rotate-90" width={26} height={26} />
           <span className="flex flex-col leading-none">
-            <span className="font-display text-xl tracking-[0.12em] text-[var(--ink)]">OBSCURA</span>
+            <span className="font-display text-xl tracking-[0.12em] text-[var(--ink)]">IMAGINE</span>
             <span className="font-mono mt-1 text-[9px] tracking-[0.32em] text-[var(--muted)]">EST. 2011 · PDX</span>
           </span>
         </a>
@@ -67,7 +67,7 @@ export default function Nav({ onAdmin }: { onAdmin: () => void }) {
       </div>
 
       {/* mobile drawer */}
-      <div className={`grid overflow-hidden transition-all duration-500 lg:hidden ${open ? "grid-rows-[1fr] border-b border-[var(--line-soft)] bg-[rgba(23,19,16,0.97)]" : "grid-rows-[0fr]"}`}>
+      <div className={`grid overflow-hidden transition-all duration-500 lg:hidden ${open ? "grid-rows-[1fr] border-b border-[var(--line-soft)] bg-[rgba(255,255,255,0.98)]" : "grid-rows-[0fr]"}`}>
         <div className="overflow-hidden">
           <nav className="flex flex-col px-6 py-4">
             {LINKS.map((l, i) => (

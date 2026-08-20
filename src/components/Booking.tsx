@@ -184,7 +184,7 @@ export default function BookingSection() {
                 <div className="mt-8 border border-dashed border-[var(--line)] bg-[var(--bg2)] p-5 text-center">
                   <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-[var(--dim)]">Your reference</div>
                   <div className="font-display mt-2 text-4xl tracking-[0.14em] text-[var(--amber)]">{submitted.ref}</div>
-                  <div className="mt-2 inline-flex items-center gap-2 border border-[var(--amber)]/40 bg-[rgba(224,164,88,0.08)] px-3 py-1 font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--amber)]">
+                  <div className="mt-2 inline-flex items-center gap-2 border border-[var(--amber)]/40 bg-[rgba(13,127,194,0.08)] px-3 py-1 font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--amber)]">
                     <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[var(--amber)]" /> Pending confirmation
                   </div>
                 </div>

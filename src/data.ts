@@ -246,11 +246,11 @@ export const FAQS: Faq[] = [
 export const TIME_SLOTS = ["09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:00"];
 
 export const STUDIO = {
-  name: "OBSCURA",
+  name: "IMAGINE",
   addr: "14 Mercer Lane, Pearl District",
   city: "Portland, OR 97209",
   phone: "(503) 555-0114",
-  email: "desk@obscura.studio",
+  email: "desk@imagine.studio",
   hours: [
     ["Tue – Fri", "10:00 – 19:00"],
     ["Saturday", "09:00 – 17:00"],
@@ -260,12 +260,12 @@ export const STUDIO = {
 
 /* ————— seed bookings (first run only) ————— */
 export const SEED_BOOKINGS: Booking[] = [
-  { id: "b1", ref: "OBS-3F7A", name: "Maya Lindqvist", email: "maya@lindqvist.se", phone: "(503) 555-2210", session: "Weddings & Elopements", packageId: "contact", date: "2026-03-14", time: "10:30", guests: 2, notes: "Ceremony at Dunmore Hall, golden-hour couple portraits are the priority.", status: "confirmed", createdAt: "2026-02-02T10:12:00.000Z" },
-  { id: "b2", ref: "OBS-K29C", name: "Daniel Okafor", email: "d.okafor@meridian.io", phone: "(503) 555-8841", session: "Portrait Sessions", packageId: "proof", date: "2026-02-27", time: "15:00", guests: 1, notes: "Executive headshots for a board profile — charcoal suit, warm grade.", status: "pending", createdAt: "2026-02-19T15:40:00.000Z" },
-  { id: "b3", ref: "OBS-91XD", name: "Hartline Atelier", email: "studio@hartline.co", phone: "(503) 555-0392", session: "Product & Still Life", packageId: "archive", date: "2026-03-02", time: "09:00", guests: 2, notes: "14 SKUs, fragrance line. Hard light, long shadows, amber glass.", status: "confirmed", createdAt: "2026-02-05T09:03:00.000Z" },
-  { id: "b4", ref: "OBS-M44E", name: "Priya Raman", email: "priya.r@postbox.com", phone: "(971) 555-1177", session: "Maternity & Newborn", packageId: "proof", date: "2026-02-21", time: "12:00", guests: 2, notes: "34 weeks — smoke-grey fabric set requested.", status: "completed", createdAt: "2026-01-28T18:22:00.000Z" },
-  { id: "b5", ref: "OBS-7QZ2", name: "The Ferraro Family", email: "ferraros@home.net", phone: "(503) 555-6420", session: "Portrait Sessions", packageId: "contact", date: "2026-03-08", time: "13:30", guests: 5, notes: "Two kids (4 & 7), one very opinionated beagle. Location: studio couch set.", status: "pending", createdAt: "2026-02-22T12:51:00.000Z" },
-  { id: "b6", ref: "OBS-A08H", name: "Voss Magazine", email: "artdesk@voss.press", phone: "(212) 555-9910", session: "Fashion & Editorial", packageId: "archive", date: "2026-03-21", time: "09:00", guests: 4, notes: "Spring cover story. Amber/red gel split, 6 looks, stylist arrives 08:00.", status: "confirmed", createdAt: "2026-02-11T11:11:00.000Z" },
-  { id: "b7", ref: "OBS-T55B", name: "Elena Brandt", email: "elena@brandt.law", phone: "(503) 555-7702", session: "Portrait Sessions", packageId: "proof", date: "2026-02-18", time: "16:30", guests: 1, notes: "", status: "cancelled", createdAt: "2026-02-01T08:45:00.000Z" },
-  { id: "b8", ref: "OBS-W13N", name: "Cascade Brew Co.", email: "events@cascadebrew.com", phone: "(503) 555-3131", session: "Events & Concerts", packageId: "contact", date: "2026-04-04", time: "18:00", guests: 3, notes: "Taproom anniversary — live band from 19:00, pit access confirmed.", status: "pending", createdAt: "2026-02-24T16:05:00.000Z" },
+  { id: "b1", ref: "IM-3F7A", name: "Maya Lindqvist", email: "maya@lindqvist.se", phone: "(503) 555-2210", session: "Weddings & Elopements", packageId: "contact", date: "2026-03-14", time: "10:30", guests: 2, notes: "Ceremony at Dunmore Hall, golden-hour couple portraits are the priority.", status: "confirmed", createdAt: "2026-02-02T10:12:00.000Z" },
+  { id: "b2", ref: "IM-K29C", name: "Daniel Okafor", email: "d.okafor@meridian.io", phone: "(503) 555-8841", session: "Portrait Sessions", packageId: "proof", date: "2026-02-27", time: "15:00", guests: 1, notes: "Executive headshots for a board profile — charcoal suit, cool grade.", status: "pending", createdAt: "2026-02-19T15:40:00.000Z" },
+  { id: "b3", ref: "IM-91XD", name: "Hartline Atelier", email: "studio@hartline.co", phone: "(503) 555-0392", session: "Product & Still Life", packageId: "archive", date: "2026-03-02", time: "09:00", guests: 2, notes: "14 SKUs, fragrance line. Hard light, long shadows, cobalt glass.", status: "confirmed", createdAt: "2026-02-05T09:03:00.000Z" },
+  { id: "b4", ref: "IM-M44E", name: "Priya Raman", email: "priya.r@postbox.com", phone: "(971) 555-1177", session: "Maternity & Newborn", packageId: "proof", date: "2026-02-21", time: "12:00", guests: 2, notes: "34 weeks — pale-blue fabric set requested.", status: "completed", createdAt: "2026-01-28T18:22:00.000Z" },
+  { id: "b5", ref: "IM-7QZ2", name: "The Ferraro Family", email: "ferraros@home.net", phone: "(503) 555-6420", session: "Portrait Sessions", packageId: "contact", date: "2026-03-08", time: "13:30", guests: 5, notes: "Two kids (4 & 7), one very opinionated beagle. Location: studio couch set.", status: "pending", createdAt: "2026-02-22T12:51:00.000Z" },
+  { id: "b6", ref: "IM-A08H", name: "Voss Magazine", email: "artdesk@voss.press", phone: "(212) 555-9910", session: "Fashion & Editorial", packageId: "archive", date: "2026-03-21", time: "09:00", guests: 4, notes: "Spring cover story. Sky/cobalt gel split, 6 looks, stylist arrives 08:00.", status: "confirmed", createdAt: "2026-02-11T11:11:00.000Z" },
+  { id: "b7", ref: "IM-T55B", name: "Elena Brandt", email: "elena@brandt.law", phone: "(503) 555-7702", session: "Portrait Sessions", packageId: "proof", date: "2026-02-18", time: "16:30", guests: 1, notes: "", status: "cancelled", createdAt: "2026-02-01T08:45:00.000Z" },
+  { id: "b8", ref: "IM-W13N", name: "Cascade Brew Co.", email: "events@cascadebrew.com", phone: "(503) 555-3131", session: "Events & Concerts", packageId: "contact", date: "2026-04-04", time: "18:00", guests: 3, notes: "Taproom anniversary — live band from 19:00, pit access confirmed.", status: "pending", createdAt: "2026-02-24T16:05:00.000Z" },
 ];

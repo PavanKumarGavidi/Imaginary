@@ -48,14 +48,14 @@ interface StoreShape {
   toast: (msg: string, tone?: "ok" | "warn") => void;
 }
 
-const LS_BOOKINGS = "obscura_bookings_v1";
-const LS_ADMIN = "obscura_admin_v1";
+const LS_BOOKINGS = "imagine_bookings_v1";
+const LS_ADMIN = "imagine_admin_v1";
 
 const genRef = () => {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   let s = "";
   for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return `OBS-${s}`;
+  return `IM-${s}`;
 };
 
 const genId = () => `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
@@ -122,7 +122,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback((user: string, pass: string) => {
-    const ok = user.trim().toLowerCase() === "admin" && pass === "obscura24";
+    const ok = user.trim().toLowerCase() === "admin" && pass === "imagine24";
     if (ok) {
       setIsAdmin(true);
       try {
