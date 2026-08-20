@@ -25,7 +25,9 @@ html {
 body {
   background-color: var(--bg);
   color: var(--ink);
-  font-family: "Instrument Sans", "Segoe UI", sans-serif;
+  font-family: "Figtree", "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 16.5px;
+  letter-spacing: 0.005em;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   background-image:
@@ -51,9 +53,13 @@ body {
 }
 
 /* ————— type helpers ————— */
-.font-display { font-family: "Anton", "Arial Narrow", sans-serif; font-weight: 400; }
-.font-body { font-family: "Instrument Sans", sans-serif; }
-.font-mono { font-family: "Space Mono", monospace; }
+.font-display {
+  font-family: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+.font-body { font-family: "Figtree", sans-serif; }
+.font-mono { font-family: "IBM Plex Mono", "SFMono-Regular", monospace; }
 
 .stroke-word {
   color: transparent;

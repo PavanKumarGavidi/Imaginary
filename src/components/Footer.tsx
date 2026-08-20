@@ -7,7 +7,7 @@ export default function Footer({ onAdmin }: { onAdmin: () => void }) {
       <div className="mx-auto max-w-7xl px-5 pt-20 md:px-8">
         {/* giant wordmark */}
         <div aria-hidden="true" className="select-none text-center">
-          <span className="stroke-word font-display block text-[17vw] leading-[0.85] tracking-tight transition-colors duration-700 hover:text-[rgba(13,127,194,0.12)]">
+          <span className="stroke-word font-display block text-[16vw] leading-[0.9] tracking-[0.05em] uppercase transition-colors duration-700 hover:text-[rgba(13,127,194,0.12)]">
             IMAGINE
           </span>
         </div>

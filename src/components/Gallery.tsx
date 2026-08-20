@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { CATEGORIES, GALLERY } from "../data";
+import { CATEGORIES } from "../data";
+import { useStore } from "../store";
 import { Reveal, SectionHead } from "./ui";
 import { IconArrowR, IconX } from "./Icons";
 
 export default function Gallery() {
+  const { frames } = useStore();
+  const published = useMemo(() => frames.filter((f) => f.published), [frames]);
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
   const [lightbox, setLightbox] = useState<number | null>(null);
 
-  const items = useMemo(() => (cat === "All" ? GALLERY : GALLERY.filter((g) => g.cat === cat)), [cat]);
+  const items = useMemo(() => (cat === "All" ? published : published.filter((g) => g.cat === cat)), [cat, published]);
 
   useEffect(() => {
     if (lightbox === null) return;
@@ -44,7 +47,7 @@ export default function Gallery() {
         <Reveal>
           <div className="mb-10 flex flex-wrap gap-2">
             {CATEGORIES.map((c) => {
-              const count = c === "All" ? GALLERY.length : GALLERY.filter((g) => g.cat === c).length;
+              const count = c === "All" ? published.length : published.filter((g) => g.cat === c).length;
               const isActive = cat === c;
               return (
                 <button
@@ -64,41 +67,49 @@ export default function Gallery() {
         </Reveal>
 
         {/* masonry */}
-        <div className="columns-1 gap-5 sm:columns-2 lg:columns-3">
-          {items.map((g, i) => (
-            <Reveal key={g.id} delay={(i % 3) * 90} className="mb-5 break-inside-avoid">
-              <button
-                onClick={() => setLightbox(i)}
-                className="group relative block w-full overflow-hidden border border-[var(--line-soft)] bg-[var(--panel)] text-left shadow-[0_18px_40px_-30px_rgba(18,42,62,0.4)]"
-              >
-                <div className="relative overflow-hidden">
-                  <img
-                    src={g.img}
-                    alt={`${g.title} — ${g.cat} photograph by Imagine`}
-                    className="w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]"
-                    loading="lazy"
-                  />
-                  {/* frame number */}
-                  <span className="absolute left-3 top-3 border border-white/25 bg-[rgba(18,42,62,0.45)] px-2 py-1 font-mono text-[10px] tracking-[0.22em] text-[var(--photo-ink)]/95 backdrop-blur-sm">
-                    FR {String(GALLERY.findIndex((x) => x.id === g.id) + 1).padStart(2, "0")}
-                  </span>
-                  <span className="chip absolute right-3 top-3 !border-white/25 bg-[rgba(18,42,62,0.45)] !text-[#8fd0f7] backdrop-blur-sm">
-                    {g.cat}
-                  </span>
-                  {/* hover wash */}
-                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(18,42,62,0.85),transparent_55%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-4 p-4 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                    <div className="font-display text-xl tracking-wide uppercase text-white">{g.title}</div>
-                    <div className="mt-1 flex items-center justify-between">
-                      <span className="font-mono text-[10px] tracking-[0.16em] text-[var(--photo-ink)]/75">{g.exif}</span>
-                      <IconArrowR width={16} height={16} className="text-[#8fd0f7]" />
+        {items.length === 0 ? (
+          <Reveal>
+            <p className="panel p-10 text-center text-sm text-[var(--muted)]">
+              Nothing hangs in this room right now — the crew is printing new frames. Try another category.
+            </p>
+          </Reveal>
+        ) : (
+          <div className="columns-1 gap-5 sm:columns-2 lg:columns-3">
+            {items.map((g, i) => (
+              <Reveal key={g.id} delay={(i % 3) * 90} className="mb-5 break-inside-avoid">
+                <button
+                  onClick={() => setLightbox(i)}
+                  className="group relative block w-full overflow-hidden border border-[var(--line-soft)] bg-[var(--panel)] text-left shadow-[0_18px_40px_-30px_rgba(18,42,62,0.4)]"
+                >
+                  <div className="relative overflow-hidden">
+                    <img
+                      src={g.img}
+                      alt={`${g.title} — ${g.cat} photograph by Imagine`}
+                      className="w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]"
+                      loading="lazy"
+                    />
+                    {/* frame number */}
+                    <span className="absolute left-3 top-3 border border-white/25 bg-[rgba(18,42,62,0.45)] px-2 py-1 font-mono text-[10px] tracking-[0.22em] text-[var(--photo-ink)]/95 backdrop-blur-sm">
+                      FR {String(published.findIndex((x) => x.id === g.id) + 1).padStart(2, "0")}
+                    </span>
+                    <span className="chip absolute right-3 top-3 !border-white/25 bg-[rgba(18,42,62,0.45)] !text-[#8fd0f7] backdrop-blur-sm">
+                      {g.cat}
+                    </span>
+                    {/* hover wash */}
+                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(18,42,62,0.85),transparent_55%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-4 p-4 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+                      <div className="font-display text-2xl tracking-wide text-white">{g.title}</div>
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="font-mono text-[10px] tracking-[0.16em] text-[var(--photo-ink)]/75">{g.exif}</span>
+                        <IconArrowR width={16} height={16} className="text-[#8fd0f7]" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            </Reveal>
-          ))}
-        </div>
+                </button>
+              </Reveal>
+            ))}
+          </div>
+        )}
 
         <Reveal delay={120}>
           <p className="mt-8 text-center font-mono text-[11px] tracking-[0.2em] uppercase text-[var(--dim)]">
@@ -125,7 +136,7 @@ export default function Gallery() {
                 e.stopPropagation();
                 setLightbox(null);
               }}
-              className="flex h-10 w-10 items-center justify-center border border-[var(--line)] text-[var(--ink)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)]"
+              className="flex h-10 w-10 items-center justify-center border border-[var(--line)] bg-white text-[var(--ink)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)]"
               aria-label="Close lightbox"
             >
               <IconX />
@@ -152,7 +163,7 @@ export default function Gallery() {
                 className="max-h-[70vh] w-auto max-w-full border border-[var(--line)] object-contain shadow-[0_40px_80px_-40px_rgba(18,42,62,0.5)]"
               />
               <figcaption className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
-                <span className="font-display text-lg tracking-wide uppercase text-[var(--ink)]">{active.title}</span>
+                <span className="font-display text-2xl text-[var(--ink)]">{active.title}</span>
                 <span className="font-mono text-[10px] tracking-[0.18em] text-[var(--muted)]">{active.exif}</span>
               </figcaption>
             </figure>

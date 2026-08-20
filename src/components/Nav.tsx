@@ -4,6 +4,7 @@ import { IconAperture, IconKey, IconMenu, IconX } from "./Icons";
 const LINKS = [
   { href: "#work", label: "Work" },
   { href: "#services", label: "Services" },
+  { href: "#team", label: "Team" },
   { href: "#packages", label: "Packages" },
   { href: "#studio", label: "Studio" },
   { href: "#faq", label: "FAQ" },

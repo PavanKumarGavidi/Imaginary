@@ -47,18 +47,19 @@ export default function Hero() {
               </span>
             </div>
 
-            <h1 className="font-display text-[clamp(3.4rem,10.5vw,8.2rem)] leading-[0.9] tracking-tight uppercase">
+            <h1 className="font-display text-[clamp(3.9rem,10vw,8rem)] leading-[0.98]">
               <span className="mask-line">
                 <span style={{ animationDelay: "0.08s" }}>We write</span>
               </span>
               <span className="mask-line">
                 <span style={{ animationDelay: "0.2s" }}>
-                  with <span className="text-[var(--amber)]">light</span>
+                  with <em className="italic text-[var(--amber)]">light</em>
                 </span>
               </span>
               <span className="mask-line">
                 <span className="text-[var(--muted)]" style={{ animationDelay: "0.32s" }}>
-                  &amp; shadow<span className="text-[var(--ember)]">.</span>
+                  &amp; <em className="italic">shadow</em>
+                  <span className="text-[var(--ember)]">.</span>
                 </span>
               </span>
             </h1>

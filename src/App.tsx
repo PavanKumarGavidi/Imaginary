@@ -4,6 +4,7 @@ import Nav from "./components/Nav";
 import Hero from "./components/Hero";
 import { About, Services } from "./components/Sections";
 import Gallery from "./components/Gallery";
+import TeamSection from "./components/Team";
 import { Faq, Pricing, Testimonials } from "./components/Closing";
 import BookingSection from "./components/Booking";
 import Footer from "./components/Footer";
@@ -46,6 +47,7 @@ function Shell() {
             <About />
             <Services onBookSession={(s) => bookWith(s)} />
             <Gallery />
+            <TeamSection />
             <Pricing onChoose={(id) => bookWith(undefined, id)} />
             <Testimonials />
             <Faq />

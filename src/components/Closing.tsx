@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FAQS, PACKAGES, QUOTES } from "../data";
+import { FAQS, PACKAGES } from "../data";
+import { useStore } from "../store";
 import { Marquee, Reveal, SectionHead } from "./ui";
 import { IconArrow, IconCheck, IconChevron, IconStar } from "./Icons";
 
@@ -9,7 +10,7 @@ export function Pricing({ onChoose }: { onChoose: (packageId: string) => void })
     <section id="packages" className="relative border-t border-[var(--line-soft)] bg-[rgba(233,244,251,0.6)] py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHead
-          num="04"
+          num="05"
           label="Packages"
           title={<>Three ways to frame it.</>}
           right={<span className="hidden font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--dim)] sm:block">Prices in USD · deposit 30%</span>}
@@ -74,14 +75,30 @@ export function Pricing({ onChoose }: { onChoose: (packageId: string) => void })
 
 /* ——————————————————— TESTIMONIALS ——————————————————— */
 export function Testimonials() {
+  const { reviews } = useStore();
+  const live = reviews.filter((r) => r.published);
   return (
     <section className="relative overflow-hidden border-t border-[var(--line-soft)] py-24 md:py-28">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
-        <SectionHead num="05" label="Kind words" title={<>Word from the sitter.</>} />
+        <SectionHead
+          num="06"
+          label="Kind words"
+          title={<>Word from the sitter.</>}
+          right={
+            <span className="hidden font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--dim)] sm:block">
+              {live.length} on the wall
+            </span>
+          }
+        />
       </div>
+      {live.length === 0 ? (
+        <div className="mx-auto max-w-7xl px-5 md:px-8">
+          <p className="panel p-10 text-center text-sm text-[var(--muted)]">The wall of kind words is being rehung — check back soon.</p>
+        </div>
+      ) : (
       <Reveal>
         <Marquee className="pb-2">
-          {QUOTES.map((q, i) => (
+          {live.map((q, i) => (
             <div
               key={q.name}
               className={`mx-3 w-[320px] shrink-0 border border-[var(--line-soft)] bg-[var(--panel)] p-6 transition-colors duration-300 hover:border-[var(--amber)] md:w-[380px] ${
@@ -102,6 +119,7 @@ export function Testimonials() {
           ))}
         </Marquee>
       </Reveal>
+      )}
     </section>
   );
 }
@@ -114,7 +132,7 @@ export function Faq() {
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <SectionHead num="06" label="Before you ask" title={<>Asked before the flash.</>} />
+            <SectionHead num="07" label="Before you ask" title={<>Asked before the flash.</>} />
             <Reveal delay={120}>
               <p className="max-w-md text-base leading-relaxed text-[var(--muted)]">
                 Deposits, delivery dates, film stocks and travel — the questions every sitter asks before the first frame.

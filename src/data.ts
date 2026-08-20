@@ -1,4 +1,4 @@
-import type { Booking } from "./store";
+import type { Booking, TeamMember } from "./store";
 
 /* ————— imagery ————— */
 export const IMG = {
@@ -239,6 +239,46 @@ export const FAQS: Faq[] = [
   {
     q: "Can you travel for weddings and events?",
     a: "Constantly. Within the state travel is on us; beyond that we quote flights and lodging at cost. About a third of our weddings each year are destination dates.",
+  },
+];
+
+/* ————— team seed (first run only) ————— */
+export const TEAM_SEED: TeamMember[] = [
+  {
+    id: "tm-1",
+    name: "Mara Ellison",
+    role: "Founder · Principal Photographer",
+    bio: "Started with two strobes and a borrowed Rollei. Fourteen years on, she still insists on metering by hand and knows every client's coffee order.",
+    gear: "Leica M6 · Portra 400",
+    hue: "deep",
+    published: true,
+  },
+  {
+    id: "tm-2",
+    name: "Jonah Reyes",
+    role: "Second Shooter · Film Specialist",
+    bio: "Runs the pit at concerts and the darkroom on Tuesdays. If a frame has honest grain in it, Jonah probably loaded the roll.",
+    gear: "Nikon FM2 · HP5 Plus",
+    hue: "sky",
+    published: true,
+  },
+  {
+    id: "tm-3",
+    name: "Suki Tanaka",
+    role: "Retouch Lead · Colourist",
+    bio: "Grades every select by hand and will quietly remove the exit sign from your wedding photo. Believes skin should look like skin.",
+    gear: "Eizo CG2700S · DaVinci",
+    hue: "ice",
+    published: true,
+  },
+  {
+    id: "tm-4",
+    name: "Theo Brandt",
+    role: "Studio Manager · Producer",
+    bio: "Keeps the calendar sane, the permits filed and the beagle out of the paper-backdrop room. Answers the desk within the hour.",
+    gear: "ColourChecker · Espresso",
+    hue: "steel",
+    published: true,
   },
 ];
 
