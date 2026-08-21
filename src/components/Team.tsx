@@ -35,34 +35,48 @@ function Sprockets() {
 
 function CrewCard({ m, index }: { m: TeamMember; index: number }) {
   const hue = HUES[m.hue] ?? HUES.deep;
+  const hasPhoto = Boolean(m.photo && m.photo.trim());
+  const tile = hasPhoto ? "#10293e" : hue.tile;
+  const ink = hasPhoto ? "#f2f9fe" : hue.ink;
+  const tag = hasPhoto ? "rgba(242,249,254,0.78)" : hue.tag;
   return (
     <div className="w-[240px] shrink-0 snap-center [perspective:1200px] md:w-auto">
       <div className="group relative aspect-[4/5] cursor-pointer transition-transform duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] hover:[transform:rotateY(180deg)]">
         {/* front — the portrait tile */}
         <div
           className="absolute inset-0 flex flex-col justify-between overflow-hidden p-5 [backface-visibility:hidden]"
-          style={{ background: hue.tile, color: hue.ink }}
+          style={{ background: tile, color: ink }}
         >
-          <div className="flex items-start justify-between font-mono text-[9px] tracking-[0.26em]" style={{ color: hue.tag }}>
+          {hasPhoto && (
+            <>
+              <img src={m.photo} alt={m.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+              <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(8,26,41,0.85)_4%,rgba(8,26,41,0.08)_58%)]" />
+            </>
+          )}
+          <div className="relative flex items-start justify-between font-mono text-[9px] tracking-[0.26em]" style={{ color: tag }}>
             <span>CREW {String(index + 1).padStart(2, "0")}</span>
             <IconAperture width={16} height={16} />
           </div>
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -right-8 -top-10 select-none font-display text-[11rem] italic leading-none opacity-[0.13]"
-          >
-            {initials(m.name)}
-          </div>
-          <div>
-            <div className="font-display text-7xl italic leading-none">{initials(m.name)}</div>
-            <div className="mt-5 border-t pt-3" style={{ borderColor: hue.tag }}>
+          {!hasPhoto && (
+            <>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-8 -top-10 select-none font-display text-[11rem] italic leading-none opacity-[0.13]"
+              >
+                {initials(m.name)}
+              </div>
+              <div className="font-display text-7xl italic leading-none">{initials(m.name)}</div>
+            </>
+          )}
+          <div className="relative mt-auto">
+            <div className="border-t pt-3" style={{ borderColor: tag }}>
               <div className="font-display text-2xl leading-tight">{m.name}</div>
-              <div className="mt-1 font-mono text-[9.5px] uppercase tracking-[0.2em]" style={{ color: hue.tag }}>
+              <div className="mt-1 font-mono text-[9.5px] uppercase tracking-[0.2em]" style={{ color: tag }}>
                 {m.role}
               </div>
             </div>
           </div>
-          <span className="absolute bottom-2 right-3 font-mono text-[8.5px] tracking-[0.22em]" style={{ color: hue.tag }}>
+          <span className="absolute bottom-2 right-3 font-mono text-[8.5px] tracking-[0.22em]" style={{ color: tag }}>
             HOVER TO FLIP ⟲
           </span>
         </div>

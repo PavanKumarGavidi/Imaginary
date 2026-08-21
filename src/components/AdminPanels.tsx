@@ -249,7 +249,7 @@ export function ReviewsPanel() {
 }
 
 /* ——————————————————— TEAM ——————————————————— */
-const EMPTY_MEMBER = { name: "", role: "", bio: "", gear: "", hue: "sky" as TeamHue, published: true };
+const EMPTY_MEMBER = { name: "", role: "", bio: "", gear: "", hue: "sky" as TeamHue, photo: "", published: true };
 const HUE_SWATCHES: { id: TeamHue; bg: string }[] = [
   { id: "deep", bg: "linear-gradient(155deg,#0d7fc2,#0b3557)" },
   { id: "sky", bg: "linear-gradient(155deg,#7ab8e6,#2f83bd)" },
@@ -311,12 +311,16 @@ export function TeamPanel() {
       >
         <form onSubmit={submit} className="grid gap-5 md:grid-cols-[auto_1fr]">
           <div className="flex flex-col items-center gap-3">
-            <div
-              className="flex h-28 w-28 items-center justify-center"
-              style={{ background: HUE_BG[form.hue], color: form.hue === "ice" ? "#122a3e" : "#f2f9fe" }}
-            >
-              <span className="font-display text-5xl italic">{initialsOf(form.name)}</span>
-            </div>
+            {/^https?:\/\/.+/.test(form.photo.trim()) ? (
+              <img src={form.photo.trim()} alt="Member preview" className="h-28 w-28 border border-[var(--line)] object-cover" />
+            ) : (
+              <div
+                className="flex h-28 w-28 items-center justify-center"
+                style={{ background: HUE_BG[form.hue], color: form.hue === "ice" ? "#122a3e" : "#f2f9fe" }}
+              >
+                <span className="font-display text-5xl italic">{initialsOf(form.name)}</span>
+              </div>
+            )}
             <Field label="Tile tone">
               <div className="flex gap-2">
                 {HUE_SWATCHES.map((h) => (
@@ -339,6 +343,14 @@ export function TeamPanel() {
             </Field>
             <Field label="Role">
               <input className="input" value={form.role} placeholder="Second shooter" onChange={(e) => setForm({ ...form, role: e.target.value })} />
+            </Field>
+            <Field label="Photo URL (optional — monogram tile used if empty)" className="sm:col-span-2">
+              <input
+                className="input font-mono !text-xs"
+                value={form.photo}
+                placeholder="https://…/portrait.jpg"
+                onChange={(e) => setForm({ ...form, photo: e.target.value })}
+              />
             </Field>
             <Field label="Short bio" className="sm:col-span-2">
               <textarea className="input resize-none" rows={2} value={form.bio} placeholder="Runs the pit at concerts…" onChange={(e) => setForm({ ...form, bio: e.target.value })} />

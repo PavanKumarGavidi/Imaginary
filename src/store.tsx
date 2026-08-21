@@ -39,6 +39,7 @@ export interface TeamMember {
   bio: string;
   gear: string;
   hue: TeamHue;
+  photo?: string;
   published: boolean;
 }
 
