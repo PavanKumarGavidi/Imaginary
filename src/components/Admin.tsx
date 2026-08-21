@@ -21,7 +21,7 @@ import {
   IconUsers,
   IconX,
 } from "./Icons";
-import { ScrambleText } from "./ui";
+import { SafeImg, ScrambleText } from "./ui";
 import { GalleryPanel, ReviewsPanel, TeamPanel } from "./AdminPanels";
 
 const STATUS_META: Record<BookingStatus, { label: string; dot: string; pill: string }> = {
@@ -70,7 +70,7 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       {/* visual side */}
       <div className="relative hidden overflow-hidden lg:block">
-        <img src={IMG.fashion} alt="Editorial frame from the Imagine archive" className="absolute inset-0 h-full w-full object-cover" />
+        <SafeImg src={IMG.fashion} alt="Editorial frame from the Imagine archive" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(246,250,253,0.97)_8%,rgba(246,250,253,0.8)_55%,rgba(246,250,253,0.93))]" />
         <div className="relative flex h-full flex-col justify-between p-10">
           <div className="flex items-center gap-3">
@@ -164,6 +164,11 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
               </div>
             </div>
           </form>
+
+          <p className="mt-4 border border-[var(--line-soft)] bg-white p-3 text-center font-mono text-[9.5px] leading-relaxed tracking-[0.06em] text-[var(--dim)]">
+            Heads-up before launch: auth &amp; data currently live in the browser (localStorage). For a real multi-user
+            deployment, point the desk at a backend (e.g. Supabase/Firebase) with server-side auth — the UI is ready for it.
+          </p>
 
           <p className="mt-6 text-center font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--dim)]">
             Unauthorised sitters will be developed in complete darkness

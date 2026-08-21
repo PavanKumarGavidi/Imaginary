@@ -1,6 +1,6 @@
 import { useStore } from "../store";
 import type { TeamHue, TeamMember } from "../store";
-import { Reveal, SectionHead } from "./ui";
+import { Reveal, SafeImg, SectionHead } from "./ui";
 import { IconAperture } from "./Icons";
 
 const HUES: Record<TeamHue, { tile: string; ink: string; tag: string }> = {
@@ -49,7 +49,7 @@ function CrewCard({ m, index }: { m: TeamMember; index: number }) {
         >
           {hasPhoto && (
             <>
-              <img src={m.photo} alt={m.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+              <SafeImg src={m.photo} alt={m.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
               <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(8,26,41,0.85)_4%,rgba(8,26,41,0.08)_58%)]" />
             </>
           )}

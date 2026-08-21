@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CATEGORIES } from "../data";
 import { useStore } from "../store";
-import { Reveal, SectionHead } from "./ui";
+import { Reveal, SafeImg, SectionHead } from "./ui";
 import { IconArrowR, IconX } from "./Icons";
 
 export default function Gallery() {
@@ -82,10 +82,10 @@ export default function Gallery() {
                   className="group relative block w-full overflow-hidden border border-[var(--line-soft)] bg-[var(--panel)] text-left shadow-[0_18px_40px_-30px_rgba(18,42,62,0.4)]"
                 >
                   <div className="relative overflow-hidden">
-                    <img
+                    <SafeImg
                       src={g.img}
                       alt={`${g.title} — ${g.cat} photograph by Imagine`}
-                      className="w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]"
+                      className="aspect-[4/5] w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]"
                       loading="lazy"
                     />
                     {/* frame number */}
@@ -156,11 +156,12 @@ export default function Gallery() {
             </button>
 
             <figure className="pop-in flex max-h-full flex-col items-center" onClick={(e) => e.stopPropagation()}>
-              <img
+              <SafeImg
                 key={active.id}
                 src={active.img}
                 alt={active.title}
                 className="max-h-[70vh] w-auto max-w-full border border-[var(--line)] object-contain shadow-[0_40px_80px_-40px_rgba(18,42,62,0.5)]"
+                fallbackClassName="aspect-[4/5] h-[60vh] max-h-[70vh] border border-[var(--line)] shadow-[0_40px_80px_-40px_rgba(18,42,62,0.5)]"
               />
               <figcaption className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
                 <span className="font-display text-2xl text-[var(--ink)]">{active.title}</span>

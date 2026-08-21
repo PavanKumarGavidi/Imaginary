@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { IMG } from "../data";
 import { useReducedMotion } from "../hooks";
 import { IconAperture, IconArrow, IconFlash } from "./Icons";
-import { Marquee, ScrambleText } from "./ui";
+import { Marquee, SafeImg, ScrambleText } from "./ui";
 
 const GENRES = ["Portrait", "Wedding", "Editorial", "Product", "Maternity", "Events", "Film scans"];
 
@@ -103,9 +103,9 @@ export default function Hero() {
               <span className="vf-bracket bottom-0 right-0 border-b-2 border-r-2" />
 
               <div className="relative overflow-hidden">
-                <img
+                <SafeImg
                   src={IMG.hero}
-                  alt="Low-key studio portrait lit with warm amber rim light"
+                  alt="Low-key studio portrait lit with soft daylight"
                   className="kenburns aspect-[4/3] w-full object-cover"
                   loading="eager"
                 />

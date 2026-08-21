@@ -4,6 +4,7 @@ import { CATEGORIES } from "../data";
 import { useStore } from "../store";
 import type { GalleryFrame, Review, TeamHue, TeamMember } from "../store";
 import { IconCheck, IconTrash, IconX } from "./Icons";
+import { SafeImg } from "./ui";
 
 /* ————— shared bits ————— */
 function Field({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
@@ -515,7 +516,7 @@ export function TeamPanel() {
         {team.map((m) => (
           <Row key={m.id} dimmed={!m.published}>
             {m.photo ? (
-              <img src={m.photo} alt={m.name} className="h-14 w-14 shrink-0 border border-[var(--line)] object-cover" />
+              <SafeImg src={m.photo} alt={m.name} className="h-14 w-14 shrink-0 border border-[var(--line)] object-cover" />
             ) : (
               <div
                 className="flex h-14 w-14 shrink-0 items-center justify-center"
@@ -655,7 +656,7 @@ export function GalleryPanel() {
         {frames.length === 0 && <p className="panel p-8 text-center text-sm text-[var(--muted)]">The archive walls are bare — hang the first frame.</p>}
         {frames.map((f) => (
           <Row key={f.id} dimmed={!f.published}>
-            <img src={f.img} alt="" className="h-16 w-16 shrink-0 border border-[var(--line)] object-cover" />
+            <SafeImg src={f.img} alt={f.title} className="h-16 w-16 shrink-0 border border-[var(--line)] object-cover" />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-display text-xl text-[var(--ink)]">{f.title}</span>

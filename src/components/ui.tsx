@@ -1,7 +1,35 @@
 import { useEffect, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ImgHTMLAttributes, ReactNode } from "react";
 import { useCountUp, useInView, useReducedMotion } from "../hooks";
 import { useStore } from "../store";
+import { IconAperture } from "./Icons";
+
+/* ————— image with graceful fallback —————
+   Photos are served from an external CDN. If one fails (network, rate-limit,
+   or a removed asset) we swap in a styled placeholder instead of a broken icon. */
+export function SafeImg({
+  className = "",
+  fallbackClassName,
+  alt,
+  ...rest
+}: ImgHTMLAttributes<HTMLImageElement> & { fallbackClassName?: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [rest.src]);
+  if (failed) {
+    return (
+      <div
+        role="img"
+        aria-label={alt}
+        className={`flex items-center justify-center overflow-hidden bg-[linear-gradient(155deg,#dcecf8_0%,#b9d4ea_100%)] text-[var(--amber)] ${
+          fallbackClassName ?? className
+        }`}
+      >
+        <IconAperture className="opacity-50" width={34} height={34} />
+      </div>
+    );
+  }
+  return <img alt={alt} className={className} onError={() => setFailed(true)} {...rest} />;
+}
 
 /* ————— scroll reveal wrapper ————— */
 export function Reveal({
