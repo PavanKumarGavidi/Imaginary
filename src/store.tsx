@@ -442,7 +442,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const requestReset = useCallback(async (email: string): Promise<string | null> => {
     if (!cloud || !supabase) return "Password reset is only available in cloud mode.";
     const redirectTo = `${window.location.origin}${window.location.pathname}`;
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    let { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    /* If this page's URL isn't on the project's redirect allow-list yet,
+       fall back to the Site URL configured in Supabase so the email still goes out. */
+    if (error && /redirect/i.test(error.message)) {
+      const retry = await supabase.auth.resetPasswordForEmail(email.trim());
+      error = retry.error;
+    }
     if (error) return error.message;
     return null;
   }, []);
