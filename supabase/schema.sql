@@ -64,6 +64,12 @@ create table if not exists public.gallery_frames (
   published boolean not null default true
 );
 
+-- ————— site-wide photos (hero / studio / login backdrop) —————
+create table if not exists public.site_photos (
+  slot_key text primary key check (slot_key in ('hero','studio','login')),
+  img      text not null
+);
+
 -- ============================================================
 -- Row Level Security
 -- ============================================================
@@ -71,6 +77,7 @@ alter table public.bookings       enable row level security;
 alter table public.reviews        enable row level security;
 alter table public.team_members   enable row level security;
 alter table public.gallery_frames enable row level security;
+alter table public.site_photos    enable row level security;
 
 -- Bookings: the public site may INSERT new bookings (the booking form).
 -- Only signed-in staff may read / update / delete them.
@@ -96,6 +103,10 @@ drop policy if exists "frames public read" on public.gallery_frames;
 create policy "frames public read"
   on public.gallery_frames for select to anon using (published = true);
 
+drop policy if exists "site photos public read" on public.site_photos;
+create policy "site photos public read"
+  on public.site_photos for select to anon using (true);
+
 -- Staff (authenticated) get full management rights.
 drop policy if exists "reviews staff all" on public.reviews;
 create policy "reviews staff all"
@@ -109,6 +120,10 @@ drop policy if exists "frames staff all" on public.gallery_frames;
 create policy "frames staff all"
   on public.gallery_frames for all to authenticated using (true) with check (true);
 
+drop policy if exists "site photos staff all" on public.site_photos;
+create policy "site photos staff all"
+  on public.site_photos for all to authenticated using (true) with check (true);
+
 -- ============================================================
 -- (Optional) Seed a couple of starter rows — safe to delete.
 -- ============================================================
@@ -121,3 +136,15 @@ insert into public.team_members (id, name, role, bio, gear, hue, photo, publishe
    'Started with two strobes and a borrowed Rollei. Fourteen years on, she still insists on metering by hand.',
    'Leica M6 · Portra 400', 'deep', '', true)
 on conflict (id) do nothing;
+
+insert into public.gallery_frames (id, title, cat, img, exif, published) values
+  ('seed-g1', 'Vows at Dunmore', 'Wedding', 'https://image.qwenlm.ai/generated-images/36926275-fe9f-4de6-a9fb-d3ac749133f3/_result.png', '85MM · f/1.8 · 1/250 · ISO 200', true),
+  ('seed-g2', 'Rust & Velvet', 'Fashion', 'https://image.qwenlm.ai/generated-images/b9274cf3-727c-46d5-94a7-7f681624a1d4/_result.png', '50MM · f/2.8 · 1/160 · ISO 400', true),
+  ('seed-g3', 'Amber No. 9', 'Product', 'https://image.qwenlm.ai/generated-images/e927488a-0c87-4d25-9ca1-11570c7eabba/_result.png', '90MM MACRO · f/8 · 1/125 · ISO 100', true)
+on conflict (id) do nothing;
+
+insert into public.site_photos (slot_key, img) values
+  ('hero',   'https://image.qwenlm.ai/generated-images/1d06e80a-d9ab-413a-b0e5-3708708d9646/_result.png'),
+  ('studio', 'https://image.qwenlm.ai/generated-images/dd7371bb-a1d8-4fd5-8305-de563b51f96d/_result.png'),
+  ('login',  'https://image.qwenlm.ai/generated-images/b9274cf3-727c-46d5-94a7-7f681624a1d4/_result.png')
+on conflict (slot_key) do nothing;

@@ -188,6 +188,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [reviews, setReviews] = useState<Review[]>(() => (cloud ? [] : load(LS_REVIEWS, seedReviews())));
   const [team, setTeam] = useState<TeamMember[]>(() => (cloud ? [] : load(LS_TEAM, TEAM_SEED)));
   const [frames, setFrames] = useState<GalleryFrame[]>(() => (cloud ? [] : seedFrames()));
+  const [sitePhotos, setSitePhotos] = useState<SitePhotos>(() => ({ ...DEFAULT_SITE_PHOTOS, ...load(LS_PHOTOS, {} as Partial<SitePhotos>) }));
   const [isAdmin, setIsAdmin] = useState<boolean>(() => (cloud ? false : load(LS_ADMIN, false)));
   const [ready, setReady] = useState(!cloud);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -209,19 +210,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     let alive = true;
     (async () => {
       try {
-        const [b, r, t, f, sess] = await Promise.all([
+        const [b, r, t, f, ph, sess] = await Promise.all([
           supabase.from("bookings").select("*").order("created_at", { ascending: false }),
           supabase.from("reviews").select("*"),
           supabase.from("team_members").select("*"),
           supabase.from("gallery_frames").select("*"),
+          supabase.from("site_photos").select("slot_key,img"),
           supabase.auth.getSession(),
         ]);
         if (!alive) return;
-        if (b.error || r.error || t.error || f.error) throw new Error(b.error?.message ?? r.error?.message ?? t.error?.message ?? f.error?.message);
+        if (b.error || r.error || t.error || f.error || ph.error)
+          throw new Error(b.error?.message ?? r.error?.message ?? t.error?.message ?? f.error?.message ?? ph.error?.message);
         setBookings((b.data as BookingRow[]).map(rowToBooking));
         setReviews((r.data as Review[]) ?? []);
         setTeam((t.data as TeamMember[]) ?? []);
         setFrames((f.data as GalleryFrame[]) ?? []);
+        if (Array.isArray(ph.data) && ph.data.length) {
+          setSitePhotos((prev) => {
+            const next = { ...prev };
+            for (const row of ph.data as { slot_key: string; img: string }[]) {
+              if (row.slot_key in next) next[row.slot_key as SitePhotoKey] = row.img;
+            }
+            return next;
+          });
+        }
         setIsAdmin(Boolean(sess.data.session));
         setRecovery(Boolean((sess.data.session as { recovery?: boolean } | null)?.recovery));
         setSyncError(null);
@@ -272,6 +284,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       /* non-fatal */
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (cloud) return;
+    try {
+      localStorage.setItem(LS_PHOTOS, JSON.stringify(sitePhotos));
+    } catch {
+      if (!warnedQuota.current) {
+        warnedQuota.current = true;
+        toast("Browser storage is full — site photo changes may not persist after reload.", "err");
+      }
+    }
+  }, [sitePhotos, toast]);
 
   /* ————— cloud write-through helper ————— */
   const remote = useCallback(
@@ -435,6 +459,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [remote]
   );
 
+  /* ————— site-wide photos (hero / studio / login backdrop) ————— */
+  const setSitePhoto = useCallback(
+    (key: SitePhotoKey, img: string) => {
+      setSitePhotos((prev) => ({ ...prev, [key]: img }));
+      void remote(() => supabase!.from("site_photos").upsert({ slot_key: key, img }));
+    },
+    [remote]
+  );
+
   /* ————— auth ————— */
   const login = useCallback(async (u: string, p: string): Promise<string | null> => {
     if (cloud && supabase) {
@@ -509,6 +542,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateFrame,
       removeFrame,
       toggleFrame,
+      sitePhotos,
+      setSitePhoto,
       login,
       recovery,
       requestReset,
@@ -517,7 +552,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toast,
       setPrefill,
     }),
-    [bookings, reviews, team, frames, isAdmin, ready, syncError, recovery, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, login, requestReset, setNewPassword, logout, toast]
+    [bookings, reviews, team, frames, isAdmin, ready, syncError, sitePhotos, recovery, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, setSitePhoto, login, requestReset, setNewPassword, logout, toast]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

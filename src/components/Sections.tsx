@@ -1,6 +1,7 @@
 import type { ComponentType, SVGProps } from "react";
-import { IMG, SERVICES } from "../data";
+import { SERVICES } from "../data";
 import type { Service } from "../data";
+import { useStore } from "../store";
 import { CountUp, Reveal, SectionHead } from "./ui";
 import { IconArrow, IconFilm, IconHanger, IconLens, IconPrint, IconPrism, IconRings, IconSprout, IconStage } from "./Icons";
 
@@ -29,6 +30,7 @@ const PROCESS = [
 
 /* ——————————————————— ABOUT / STUDIO ——————————————————— */
 export function About() {
+  const { sitePhotos } = useStore();
   return (
     <section id="studio" className="relative py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
@@ -63,7 +65,7 @@ export function About() {
               <figure className="group relative border border-[var(--line)] bg-[var(--panel)] p-3">
                 <div className="overflow-hidden">
                   <img
-                    src={IMG.studio}
+                    src={sitePhotos.studio}
                     alt="The Imagine studio floor — camera on tripod, backdrop rolls, soft daylight"
                     className="aspect-[5/6] w-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.05]"
                     loading="lazy"

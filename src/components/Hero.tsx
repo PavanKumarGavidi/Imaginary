@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { IMG } from "../data";
+import { useStore } from "../store";
 import { useReducedMotion } from "../hooks";
 import { IconAperture, IconArrow, IconFlash } from "./Icons";
 import { Marquee, SafeImg, ScrambleText } from "./ui";
@@ -24,6 +24,7 @@ function RotatingBadge() {
 
 export default function Hero() {
   const reduced = useReducedMotion();
+  const { sitePhotos } = useStore();
   const [flash, setFlash] = useState(true);
 
   useEffect(() => {
@@ -107,7 +108,7 @@ export default function Hero() {
 
               <div className="relative overflow-hidden">
                 <SafeImg
-                  src={IMG.hero}
+                  src={sitePhotos.hero}
                   alt="Low-key studio portrait lit with soft daylight"
                   className="kenburns aspect-[4/3] w-full object-cover"
                   loading="eager"

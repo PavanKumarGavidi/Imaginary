@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { CATEGORIES } from "../data";
-import { useStore } from "../store";
-import type { GalleryFrame, Review, TeamHue, TeamMember } from "../store";
+import { DEFAULT_SITE_PHOTOS, useStore } from "../store";
+import type { GalleryFrame, Review, SitePhotoKey, TeamHue, TeamMember } from "../store";
 import { IconCheck, IconTrash, IconX } from "./Icons";
 import { SafeImg } from "./ui";
 
@@ -174,7 +174,7 @@ const shrink = (dataUrl: string) =>
     img.src = dataUrl;
   });
 
-function UploadField({
+export function UploadField({
   value,
   onFile,
   onClear,
@@ -685,5 +685,113 @@ export function GalleryPanel() {
         ))}
       </div>
     </>
+  );
+}
+
+/* ——————————————————— SITE PHOTOS ——————————————————— */
+const PHOTO_SLOTS: { key: SitePhotoKey; label: string; where: string }[] = [
+  { key: "hero", label: "Hero frame", where: "The large photo on the opening screen" },
+  { key: "studio", label: "Studio photo", where: "The “About the studio” section photo" },
+  { key: "login", label: "Login backdrop", where: "Left panel of the staff sign-in page" },
+];
+
+function SlotCard({ slotKey, label, where }: { slotKey: SitePhotoKey; label: string; where: string }) {
+  const { sitePhotos, setSitePhoto, toast } = useStore();
+  const current = sitePhotos[slotKey];
+  const [draft, setDraft] = useState(current);
+  const isDefault = current === DEFAULT_SITE_PHOTOS[slotKey];
+
+  /* if the live value changes elsewhere (e.g. restore), keep the draft in step */
+  useEffect(() => {
+    setDraft(current);
+  }, [current]);
+
+  const save = () => {
+    if (!draft.trim()) {
+      toast("Paste an image URL or upload a file first.", "err");
+      return;
+    }
+    setSitePhoto(slotKey, draft.trim());
+    toast(`${label} updated — live on the site now.`);
+  };
+
+  return (
+    <div className="panel flex flex-col overflow-hidden">
+      <div className="relative h-48 w-full overflow-hidden border-b border-[var(--line-soft)] bg-[var(--bg2)]">
+        <img
+          src={current}
+          alt={`${label} preview`}
+          className="h-full w-full object-cover transition-transform duration-700 hover:scale-[1.04]"
+        />
+        <span className="absolute left-3 top-3 border border-white/25 bg-[rgba(18,42,62,0.5)] px-2 py-1 font-mono text-[9px] tracking-[0.22em] uppercase text-white backdrop-blur-sm">
+          {label}
+        </span>
+        {isDefault ? (
+          <span className="absolute right-3 top-3 chip !border-white/25 bg-[rgba(18,42,62,0.5)] !text-[var(--photo-ink)] backdrop-blur-sm">Default</span>
+        ) : (
+          <span className="absolute right-3 top-3 chip !border-white/25 bg-[rgba(13,127,194,0.75)] !text-white backdrop-blur-sm">Custom</span>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col gap-3 p-5">
+        <div>
+          <div className="font-display text-2xl text-[var(--ink)]">{label}</div>
+          <div className="mt-0.5 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--dim)]">{where}</div>
+        </div>
+
+        <Field label="Image URL">
+          <input
+            className="input font-mono !text-xs"
+            value={draft.startsWith("data:") ? "" : draft}
+            placeholder={draft.startsWith("data:") ? "Uploaded file attached below ✓" : "https://…/photo.jpg"}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+        </Field>
+
+        <UploadField value={draft} label="Upload a photo" onFile={(url) => setDraft(url)} onClear={() => setDraft("")} />
+
+        <div className="mt-auto flex flex-wrap items-center gap-3 pt-1">
+          <button onClick={save} className="btn-solid !py-2.5">
+            <IconCheck width={15} height={15} /> Save
+          </button>
+          {!isDefault && (
+            <button
+              onClick={() => {
+                setSitePhoto(slotKey, DEFAULT_SITE_PHOTOS[slotKey]);
+                toast(`${label} restored to the default photo.`);
+              }}
+              className="btn-ghost !py-2.5"
+            >
+              Restore default
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function PhotosPanel() {
+  const { frames, team } = useStore();
+  return (
+    <div className="fade-in">
+      <div className="mb-6">
+        <h2 className="font-display text-3xl text-[var(--ink)]">Site photos</h2>
+        <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">
+          The big frames across the public site · team &amp; work photos live in their own tabs ({team.filter((m) => m.published).length} crew · {frames.filter((f) => f.published).length} frames live)
+        </p>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {PHOTO_SLOTS.map((s) => (
+          <SlotCard key={s.key} slotKey={s.key} label={s.label} where={s.where} />
+        ))}
+      </div>
+
+      <p className="mt-6 border border-[var(--line-soft)] bg-white p-4 font-mono text-[10px] leading-relaxed tracking-[0.1em] text-[var(--dim)]">
+        TIP — team member portraits and gallery (work) frames have their own tabs with per-item photo upload. Changes here
+        publish instantly to every visitor.
+      </p>
+    </div>
   );
 }

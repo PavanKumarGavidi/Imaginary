@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { IMG, getPackage } from "../data";
+import { getPackage } from "../data";
 import { hasRecoveryInUrl } from "../lib/supabase";
 import { useStore } from "../store";
 import type { Booking, BookingStatus } from "../store";
@@ -23,7 +23,7 @@ import {
   IconX,
 } from "./Icons";
 import { SafeImg, ScrambleText } from "./ui";
-import { GalleryPanel, ReviewsPanel, TeamPanel } from "./AdminPanels";
+import { GalleryPanel, PhotosPanel, ReviewsPanel, TeamPanel } from "./AdminPanels";
 
 const STATUS_META: Record<BookingStatus, { label: string; dot: string; pill: string }> = {
   pending: { label: "Pending", dot: "bg-[var(--amber)]", pill: "border-[var(--amber)]/50 bg-[rgba(13,127,194,0.1)] text-[var(--amber)]" },
@@ -44,6 +44,7 @@ const TABS = [
   { id: "reviews", label: "Reviews" },
   { id: "team", label: "Team" },
   { id: "gallery", label: "Gallery" },
+  { id: "photos", label: "Photos" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
@@ -51,7 +52,7 @@ type Tab = (typeof TABS)[number]["id"];
 type AuthView = "signin" | "forgot" | "sent" | "reset" | "done";
 
 export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) {
-  const { login, requestReset, setNewPassword, toast, cloud, recovery } = useStore();
+  const { login, requestReset, setNewPassword, toast, cloud, recovery, sitePhotos } = useStore();
   const [view, setView] = useState<AuthView>(() => (recovery || hasRecoveryInUrl() ? "reset" : "signin"));
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
@@ -144,7 +145,7 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       {/* visual side */}
       <div className="relative hidden overflow-hidden lg:block">
-        <SafeImg src={IMG.fashion} alt="Editorial frame from the Imagine archive" className="absolute inset-0 h-full w-full object-cover" />
+        <SafeImg src={sitePhotos.login} alt="Editorial frame from the Imagine archive" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(246,250,253,0.97)_8%,rgba(246,250,253,0.8)_55%,rgba(246,250,253,0.93))]" />
         <div className="relative flex h-full flex-col justify-between p-10">
           <div className="flex items-center gap-3">
@@ -515,6 +516,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
     reviews: reviews.length,
     team: team.length,
     gallery: frames.length,
+    photos: 3,
   };
 
   return (
@@ -780,6 +782,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
           {tab === "reviews" && <ReviewsPanel />}
           {tab === "team" && <TeamPanel />}
           {tab === "gallery" && <GalleryPanel />}
+          {tab === "photos" && <PhotosPanel />}
         </div>
       </main>
 
