@@ -69,11 +69,14 @@ export default function Hero() {
               weddings, editorial and product work, lit slowly and retouched by hand under one roof.
             </p>
 
-            <div className="mt-9 flex flex-wrap items-center gap-4">
-              <a href="#book" className="btn-solid">
-                Book a session <IconArrow width={17} height={17} />
+            <div className="mt-9 flex items-center gap-3 sm:gap-4">
+              <a
+                href="#book"
+                className="btn-solid max-sm:flex-1 max-sm:justify-center max-sm:px-2.5 max-sm:py-2.5 max-sm:text-[13px]"
+              >
+                Book a session <IconArrow width={17} height={17} className="max-sm:h-4 max-sm:w-4" />
               </a>
-              <a href="#work" className="btn-ghost">
+              <a href="#work" className="btn-ghost max-sm:flex-1 max-sm:justify-center max-sm:px-2.5 max-sm:py-2.5 max-sm:text-[13px]">
                 Browse the archive
               </a>
             </div>

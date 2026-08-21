@@ -33,14 +33,16 @@ function Sprockets() {
   );
 }
 
-function CrewCard({ m, index }: { m: TeamMember; index: number }) {
+function CrewCard({ m, index, quarter }: { m: TeamMember; index: number; quarter: boolean }) {
   const hue = HUES[m.hue] ?? HUES.deep;
   const hasPhoto = Boolean(m.photo && m.photo.trim());
   const tile = hasPhoto ? "#10293e" : hue.tile;
   const ink = hasPhoto ? "#f2f9fe" : hue.ink;
   const tag = hasPhoto ? "rgba(242,249,254,0.78)" : hue.tag;
   return (
-    <div className="w-[240px] shrink-0 snap-center [perspective:1200px] md:w-auto">
+    <div
+      className={`w-[240px] shrink-0 snap-center [perspective:1200px] ${quarter ? "md:w-[calc((100%-3rem)/4)]" : "md:w-auto"}`}
+    >
       <div className="group relative aspect-[4/5] cursor-pointer transition-transform duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] hover:[transform:rotateY(180deg)]">
         {/* front — the portrait tile */}
         <div
@@ -124,13 +126,24 @@ export default function TeamSection() {
             <Reveal>
               <div className="overflow-hidden border border-[#1d3a52] bg-[#10293e] px-4 py-4 shadow-[0_36px_70px_-38px_rgba(16,41,62,0.6)]">
                 <Sprockets />
-                <div className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-4 md:gap-4 md:overflow-visible md:pb-0">
+                <div
+                  className={`mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 ${
+                    visible.length <= 4 ? "md:grid md:grid-cols-4 md:gap-4 md:overflow-visible md:pb-0" : "md:pb-3"
+                  }`}
+                >
                   {visible.map((m, i) => (
-                    <CrewCard key={m.id} m={m} index={i} />
+                    <CrewCard key={m.id} m={m} index={i} quarter={visible.length > 4} />
                   ))}
                 </div>
-                <div className="mt-4">
-                  <Sprockets />
+                <div className="mt-4 flex items-center justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <Sprockets />
+                  </div>
+                  {visible.length > 4 && (
+                    <span className="hidden shrink-0 pl-4 font-mono text-[9px] tracking-[0.26em] uppercase text-[rgba(242,249,254,0.55)] md:inline">
+                      Scroll →
+                    </span>
+                  )}
                 </div>
               </div>
             </Reveal>

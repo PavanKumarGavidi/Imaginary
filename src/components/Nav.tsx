@@ -54,8 +54,9 @@ export default function Nav({ onAdmin }: { onAdmin: () => void }) {
             <IconKey width={14} height={14} />
             Staff
           </button>
-          <a href="#book" className="btn-solid !px-4 !py-2.5 text-sm">
-            Book a session
+          <a href="#book" className="btn-solid !px-4 !py-2.5 text-sm max-sm:!h-10 max-sm:!px-3 max-sm:!text-xs">
+            <span className="max-sm:hidden">Book a session</span>
+            <span className="hidden max-sm:inline">Book</span>
           </a>
           <button
             className="flex h-10 w-10 items-center justify-center border border-[var(--line)] text-[var(--ink)] lg:hidden"
