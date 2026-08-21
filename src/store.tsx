@@ -441,6 +441,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const requestReset = useCallback(async (email: string): Promise<string | null> => {
     if (!cloud || !supabase) return "Password reset is only available in cloud mode.";
+    const friendly = (msg: string) =>
+      /rate limit/i.test(msg)
+        ? "Supabase's free plan only allows a few auth emails per hour. Wait about an hour and try again — or set up custom SMTP in Supabase to remove the limit entirely."
+        : msg;
     const redirectTo = `${window.location.origin}${window.location.pathname}`;
     let { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
     /* If this page's URL isn't on the project's redirect allow-list yet,
@@ -449,7 +453,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const retry = await supabase.auth.resetPasswordForEmail(email.trim());
       error = retry.error;
     }
-    if (error) return error.message;
+    if (error) return friendly(error.message);
     return null;
   }, []);
 
