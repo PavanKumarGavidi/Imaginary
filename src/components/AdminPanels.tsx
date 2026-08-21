@@ -148,6 +148,142 @@ function FormActions({ label, onCancel }: { label: string; onCancel: () => void 
   );
 }
 
+/* Downscale to ≤1100px JPEG so uploads stay small enough for browser storage. */
+const shrink = (dataUrl: string) =>
+  new Promise<string>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const MAX = 1100;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("canvas unavailable");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      } catch {
+        reject();
+      }
+    };
+    img.onerror = () => reject();
+    img.src = dataUrl;
+  });
+
+function UploadField({
+  value,
+  onFile,
+  onClear,
+  label = "Upload an image",
+}: {
+  value: string;
+  onFile: (dataUrl: string) => void;
+  onClear: () => void;
+  label?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [drag, setDrag] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const readFile = (file: File | null | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setErr("That file isn't an image.");
+      return;
+    }
+    if (file.size > 6 * 1024 * 1024) {
+      setErr("Keep it under 6 MB — it will be compressed automatically.");
+      return;
+    }
+    setErr("");
+    setBusy(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const raw = String(reader.result);
+      shrink(raw)
+        .then((url) => {
+          onFile(url);
+          setBusy(false);
+        })
+        .catch(() => {
+          onFile(raw);
+          setBusy(false);
+        });
+    };
+    reader.onerror = () => {
+      setErr("Couldn't read that file — try another.");
+      setBusy(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDrag(true);
+        }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDrag(false);
+          readFile(e.dataTransfer.files?.[0]);
+        }}
+        className={`cursor-pointer border border-dashed px-3 py-3 text-center transition-all duration-200 ${
+          drag
+            ? "border-[var(--amber)] bg-[rgba(13,127,194,0.07)] scale-[1.01]"
+            : "border-[var(--line)] hover:border-[var(--amber)] hover:bg-[rgba(13,127,194,0.03)]"
+        }`}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            readFile(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+        {busy ? (
+          <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--amber)]">Developing…</span>
+        ) : (
+          <>
+            <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--muted)]">⇪ {label}</span>
+            <span className="mt-1 block font-mono text-[9px] tracking-[0.1em] text-[var(--dim)]">
+              click or drag &amp; drop · auto-compressed · max 6 MB
+            </span>
+          </>
+        )}
+      </div>
+      {err && <p className="mt-1.5 text-[11px] text-[var(--ember)]">{err}</p>}
+      {value && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="mt-1.5 font-mono text-[9.5px] tracking-[0.18em] uppercase text-[var(--dim)] underline decoration-dotted underline-offset-4 transition-colors hover:text-[var(--ember)]"
+        >
+          ✕ Remove image
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ——————————————————— REVIEWS ——————————————————— */
 const EMPTY_REVIEW = { quote: "", name: "", meta: "", published: true };
 
@@ -311,7 +447,7 @@ export function TeamPanel() {
       >
         <form onSubmit={submit} className="grid gap-5 md:grid-cols-[auto_1fr]">
           <div className="flex flex-col items-center gap-3">
-            {/^https?:\/\/.+/.test(form.photo.trim()) ? (
+            {form.photo.trim() ? (
               <img src={form.photo.trim()} alt="Member preview" className="h-28 w-28 border border-[var(--line)] object-cover" />
             ) : (
               <div
@@ -347,11 +483,19 @@ export function TeamPanel() {
             <Field label="Photo URL (optional — monogram tile used if empty)" className="sm:col-span-2">
               <input
                 className="input font-mono !text-xs"
-                value={form.photo}
-                placeholder="https://…/portrait.jpg"
+                value={form.photo.startsWith("data:") ? "" : form.photo}
+                placeholder={form.photo.startsWith("data:") ? "Uploaded file attached below ✓" : "https://…/portrait.jpg"}
                 onChange={(e) => setForm({ ...form, photo: e.target.value })}
               />
             </Field>
+            <div className="sm:col-span-2">
+              <UploadField
+                value={form.photo}
+                label="Upload a portrait"
+                onFile={(url) => setForm({ ...form, photo: url })}
+                onClear={() => setForm({ ...form, photo: "" })}
+              />
+            </div>
             <Field label="Short bio" className="sm:col-span-2">
               <textarea className="input resize-none" rows={2} value={form.bio} placeholder="Runs the pit at concerts…" onChange={(e) => setForm({ ...form, bio: e.target.value })} />
             </Field>
@@ -370,12 +514,16 @@ export function TeamPanel() {
         {team.length === 0 && <p className="panel p-8 text-center text-sm text-[var(--muted)]">The roster is empty — add the first crew member.</p>}
         {team.map((m) => (
           <Row key={m.id} dimmed={!m.published}>
-            <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center"
-              style={{ background: HUE_BG[m.hue], color: m.hue === "ice" ? "#122a3e" : "#f2f9fe" }}
-            >
-              <span className="font-display text-2xl italic">{initialsOf(m.name)}</span>
-            </div>
+            {m.photo ? (
+              <img src={m.photo} alt={m.name} className="h-14 w-14 shrink-0 border border-[var(--line)] object-cover" />
+            ) : (
+              <div
+                className="flex h-14 w-14 shrink-0 items-center justify-center"
+                style={{ background: HUE_BG[m.hue], color: m.hue === "ice" ? "#122a3e" : "#f2f9fe" }}
+              >
+                <span className="font-display text-2xl italic">{initialsOf(m.name)}</span>
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <div className="font-display text-xl text-[var(--ink)]">{m.name}</div>
               <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--dim)]">{m.role}</div>
@@ -386,7 +534,7 @@ export function TeamPanel() {
               <EditButton
                 onClick={() => {
                   setEditing(m.id);
-                  setForm({ name: m.name, role: m.role, bio: m.bio, gear: m.gear, hue: m.hue, published: m.published });
+                  setForm({ name: m.name, role: m.role, bio: m.bio, gear: m.gear, hue: m.hue, photo: m.photo ?? "", published: m.published });
                   setOpen(true);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
@@ -423,8 +571,10 @@ export function GalleryPanel() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.title.trim() || !/^https?:\/\/.+/.test(form.img.trim())) {
-      toast("A title and a valid image URL (https://…) are required.", "err");
+    const img = form.img.trim();
+    const imgOk = /^https?:\/\/.+/.test(img) || img.startsWith("data:image/");
+    if (!form.title.trim() || !imgOk) {
+      toast("A title and an image (paste a URL or upload a file) are required.", "err");
       urlRef.current?.focus();
       return;
     }
@@ -474,8 +624,22 @@ export function GalleryPanel() {
               </select>
             </Field>
             <Field label="Image URL" className="sm:col-span-2">
-              <input ref={urlRef} className="input font-mono !text-xs" value={form.img} placeholder="https://…/frame.jpg" onChange={(e) => setForm({ ...form, img: e.target.value })} />
+              <input
+                ref={urlRef}
+                className="input font-mono !text-xs"
+                value={form.img.startsWith("data:") ? "" : form.img}
+                placeholder={form.img.startsWith("data:") ? "Uploaded file attached below ✓" : "https://…/frame.jpg"}
+                onChange={(e) => setForm({ ...form, img: e.target.value })}
+              />
             </Field>
+            <div className="sm:col-span-2">
+              <UploadField
+                value={form.img}
+                label="Upload a frame"
+                onFile={(url) => setForm({ ...form, img: url })}
+                onClear={() => setForm({ ...form, img: "" })}
+              />
+            </div>
             <Field label="EXIF line (optional)">
               <input className="input font-mono !text-xs" value={form.exif} placeholder="85MM · f/1.8 · 1/250 · ISO 200" onChange={(e) => setForm({ ...form, exif: e.target.value })} />
             </Field>

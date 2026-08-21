@@ -128,18 +128,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const toastId = useRef(0);
+  const quotaWarned = useRef(false);
 
   useEffect(() => {
-    localStorage.setItem(LS_BOOKINGS, JSON.stringify(bookings));
+    const save = (key: string, value: unknown) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch {
+        if (!quotaWarned.current) {
+          quotaWarned.current = true;
+          setToasts((t) => [
+            ...t,
+            { id: ++toastId.current, msg: "Browser storage is full — uploaded images may not survive a reload. Try smaller files.", tone: "err" },
+          ]);
+        }
+      }
+    };
+    save(LS_BOOKINGS, bookings);
   }, [bookings]);
   useEffect(() => {
-    localStorage.setItem(LS_REVIEWS, JSON.stringify(reviews));
+    try {
+      localStorage.setItem(LS_REVIEWS, JSON.stringify(reviews));
+    } catch {
+      /* non-image data is tiny; ignore */
+    }
   }, [reviews]);
   useEffect(() => {
-    localStorage.setItem(LS_TEAM, JSON.stringify(team));
+    try {
+      localStorage.setItem(LS_TEAM, JSON.stringify(team));
+    } catch {
+      /* quota — keep in-memory state */
+    }
   }, [team]);
   useEffect(() => {
-    localStorage.setItem(LS_FRAMES, JSON.stringify(frames));
+    try {
+      localStorage.setItem(LS_FRAMES, JSON.stringify(frames));
+    } catch {
+      /* quota — keep in-memory state */
+    }
   }, [frames]);
   useEffect(() => {
     localStorage.setItem(LS_ADMIN, JSON.stringify(isAdmin));
