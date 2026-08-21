@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { GALLERY, QUOTES, SEED_BOOKINGS, TEAM_SEED } from "./data";
+import { GALLERY, IMG, QUOTES, SEED_BOOKINGS, TEAM_SEED } from "./data";
 import type { Category } from "./data";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
@@ -53,6 +53,16 @@ export interface GalleryFrame {
   published: boolean;
 }
 
+export type SitePhotoKey = "hero" | "studio" | "login";
+export type SitePhotos = Record<SitePhotoKey, string>;
+
+/** Original images shipped with the site — used by "restore default". */
+export const DEFAULT_SITE_PHOTOS: SitePhotos = {
+  hero: IMG.hero,
+  studio: IMG.studio,
+  login: IMG.fashion,
+};
+
 export interface ToastMsg {
   id: number;
   msg: string;
@@ -73,8 +83,11 @@ interface Store {
   cloud: boolean;
   ready: boolean;
   syncError: string | null;
+  sitePhotos: SitePhotos;
   toasts: ToastMsg[];
   prefill: Prefill | null;
+  /** Swap one of the site-wide photos (hero / studio / login). */
+  setSitePhoto: (key: SitePhotoKey, url: string) => void;
   addBooking: (b: Omit<Booking, "id" | "ref" | "status" | "createdAt">) => Booking;
   setBookingStatus: (id: string, s: BookingStatus) => void;
   removeBooking: (id: string) => void;
@@ -110,6 +123,7 @@ const LS_ADMIN = "imagine_admin_v1";
 const LS_REVIEWS = "imagine_reviews_v1";
 const LS_TEAM = "imagine_team_v1";
 const LS_FRAMES = "imagine_frames_v1";
+const LS_PHOTOS = "imagine_photos_v1";
 
 const cloud = isSupabaseConfigured;
 
