@@ -9,12 +9,28 @@ import { Faq, Pricing, Testimonials } from "./components/Closing";
 import BookingSection from "./components/Booking";
 import Footer from "./components/Footer";
 import { Dashboard, LoginPage } from "./components/Admin";
+import { IconAperture } from "./components/Icons";
 import { Toasts } from "./components/ui";
 
 type View = "site" | "login" | "admin";
 
+function BootScreen() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6">
+      <div className="relative flex h-16 w-16 items-center justify-center">
+        <span className="pulse-dot absolute inset-0 rounded-full border border-[var(--line)]" />
+        <IconAperture width={30} height={30} className="spin-slow text-[var(--amber)]" />
+      </div>
+      <div className="text-center">
+        <div className="font-display text-3xl tracking-[0.06em]">IMAGINE</div>
+        <div className="font-mono mt-2 text-[10px] tracking-[0.3em] uppercase text-[var(--muted)]">Opening the darkroom…</div>
+      </div>
+    </div>
+  );
+}
+
 function Shell() {
-  const { isAdmin, setPrefill } = useStore();
+  const { isAdmin, setPrefill, ready } = useStore();
   const [view, setView] = useState<View>("site");
 
   useEffect(() => {
@@ -33,6 +49,8 @@ function Shell() {
       });
     });
   };
+
+  if (!ready) return <BootScreen />;
 
   return (
     <div className="min-h-screen">

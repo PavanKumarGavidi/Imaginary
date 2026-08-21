@@ -48,20 +48,25 @@ type Tab = (typeof TABS)[number]["id"];
 
 /* ————————————————— LOGIN ————————————————— */
 export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) {
-  const { login, toast } = useStore();
+  const { login, toast, cloud } = useStore();
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (login(user, pass)) {
-      toast("Welcome back — the desk is live.");
+    if (busy) return;
+    setBusy(true);
+    const err = await login(user, pass);
+    setBusy(false);
+    if (!err) {
+      toast(cloud ? "Signed in — desk synced with Supabase." : "Welcome back — the desk is live.");
       onSuccess();
     } else {
-      setError("Credentials not recognised. Try the demo pair below.");
+      setError(cloud ? err : "Credentials not recognised. Try the demo pair below.");
       setShakeKey((k) => k + 1);
     }
   };
@@ -112,11 +117,11 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
 
           <form key={shakeKey} onSubmit={submit} className={`panel mt-9 p-7 shadow-[0_24px_50px_-30px_rgba(18,42,62,0.35)] ${error ? "shake" : ""}`} noValidate>
             <div>
-              <label className="label" htmlFor="adm-user">Username</label>
+              <label className="label" htmlFor="adm-user">{cloud ? "Admin email" : "Username"}</label>
               <input
                 id="adm-user"
                 className={`input ${error ? "err" : ""}`}
-                placeholder="admin"
+                placeholder={cloud ? "you@imagine.studio" : "admin"}
                 autoComplete="username"
                 value={user}
                 onChange={(e) => {
@@ -153,22 +158,34 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
 
             {error && <p className="mt-4 border-l-2 border-[var(--ember)] pl-3 text-xs text-[var(--ember)]">{error}</p>}
 
-            <button type="submit" className="btn-solid mt-6 w-full justify-center">
-              <IconKey width={16} height={16} /> Unlock the desk
+            <button type="submit" className="btn-solid mt-6 w-full justify-center" disabled={busy}>
+              <IconKey width={16} height={16} /> {busy ? "Checking the darkroom…" : "Unlock the desk"}
             </button>
 
-            <div className="mt-6 border border-dashed border-[var(--line)] bg-[var(--bg2)] p-4">
-              <div className="font-mono text-[9px] tracking-[0.3em] uppercase text-[var(--dim)]">Demo access</div>
-              <div className="mt-2 font-mono text-xs text-[var(--muted)]">
-                user <span className="text-[var(--amber)]">admin</span> · pass <span className="text-[var(--amber)]">imagine24</span>
+            {cloud ? (
+              <div className="mt-6 border border-dashed border-[var(--sage)]/50 bg-[rgba(47,138,99,0.06)] p-4">
+                <div className="font-mono text-[9px] tracking-[0.3em] uppercase text-[var(--sage)]">Cloud mode · Supabase</div>
+                <div className="mt-2 font-mono text-[11px] leading-relaxed text-[var(--muted)]">
+                  Signed-in staff get full control; visitors can only send bookings and read published content (row-level security).
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="mt-6 border border-dashed border-[var(--line)] bg-[var(--bg2)] p-4">
+                <div className="font-mono text-[9px] tracking-[0.3em] uppercase text-[var(--dim)]">Demo access</div>
+                <div className="mt-2 font-mono text-xs text-[var(--muted)]">
+                  user <span className="text-[var(--amber)]">admin</span> · pass <span className="text-[var(--amber)]">imagine24</span>
+                </div>
+              </div>
+            )}
           </form>
 
-          <p className="mt-4 border border-[var(--line-soft)] bg-white p-3 text-center font-mono text-[9.5px] leading-relaxed tracking-[0.06em] text-[var(--dim)]">
-            Heads-up before launch: auth &amp; data currently live in the browser (localStorage). For a real multi-user
-            deployment, point the desk at a backend (e.g. Supabase/Firebase) with server-side auth — the UI is ready for it.
-          </p>
+          {!cloud && (
+            <p className="mt-4 border border-[var(--line-soft)] bg-white p-3 text-center font-mono text-[9.5px] leading-relaxed tracking-[0.06em] text-[var(--dim)]">
+              Running in local demo mode — add <span className="text-[var(--amber)]">VITE_SUPABASE_URL</span> &amp;{" "}
+              <span className="text-[var(--amber)]">VITE_SUPABASE_ANON_KEY</span> to <span className="text-[var(--amber)]">.env.local</span>{" "}
+              and run <span className="text-[var(--amber)]">supabase/schema.sql</span> to go live with cloud storage &amp; auth.
+            </p>
+          )}
 
           <p className="mt-6 text-center font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--dim)]">
             Unauthorised sitters will be developed in complete darkness
@@ -181,7 +198,7 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
 
 /* ————————————————— DASHBOARD ————————————————— */
 export function Dashboard({ onExit }: { onExit: () => void }) {
-  const { bookings, setBookingStatus, removeBooking, reviews, team, frames, logout, toast } = useStore();
+  const { bookings, setBookingStatus, removeBooking, reviews, team, frames, logout, toast, cloud, syncError } = useStore();
   const [tab, setTab] = useState<Tab>("bookings");
   const [filter, setFilter] = useState<"all" | BookingStatus>("all");
   const [query, setQuery] = useState("");
@@ -267,8 +284,13 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
               <div className="font-mono mt-0.5 text-[8.5px] tracking-[0.3em] text-[var(--muted)]">STUDIO DESK</div>
             </div>
           </div>
-          <span className="ml-auto hidden items-center gap-2 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--sage)] sm:flex">
-            <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[var(--sage)]" /> Live sync
+          <span
+            className={`ml-auto hidden items-center gap-2 font-mono text-[10px] tracking-[0.2em] uppercase sm:flex ${
+              syncError ? "text-[var(--ember)]" : cloud ? "text-[var(--sage)]" : "text-[var(--dim)]"
+            }`}
+          >
+            <span className={`pulse-dot h-1.5 w-1.5 rounded-full ${syncError ? "bg-[var(--ember)]" : cloud ? "bg-[var(--sage)]" : "bg-[var(--dim)]"}`} />
+            {syncError ? "Sync issue" : cloud ? "Cloud sync · Supabase" : "Local demo mode"}
           </span>
           <button onClick={onExit} className="btn-ghost !px-4 !py-2 text-sm">
             <IconBack width={15} height={15} /> View site
@@ -285,6 +307,14 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
           </button>
         </div>
       </header>
+
+      {syncError && (
+        <div className="border-b border-[var(--ember)]/40 bg-[rgba(208,91,69,0.08)] px-5 py-3 md:px-8">
+          <p className="font-mono text-[11px] leading-relaxed tracking-[0.04em] text-[var(--ember)]">
+            ⚠ {syncError}
+          </p>
+        </div>
+      )}
 
       <main className="mx-auto max-w-7xl px-5 pt-10 md:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4">

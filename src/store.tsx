@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from "react";
 import { GALLERY, QUOTES, SEED_BOOKINGS, TEAM_SEED } from "./data";
 import type { Category } from "./data";
+import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
 /* ————— types ————— */
 export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
@@ -69,6 +70,9 @@ interface Store {
   team: TeamMember[];
   frames: GalleryFrame[];
   isAdmin: boolean;
+  cloud: boolean;
+  ready: boolean;
+  syncError: string | null;
   toasts: ToastMsg[];
   prefill: Prefill | null;
   addBooking: (b: Omit<Booking, "id" | "ref" | "status" | "createdAt">) => Booking;
@@ -86,7 +90,8 @@ interface Store {
   updateFrame: (id: string, f: Omit<GalleryFrame, "id">) => void;
   removeFrame: (id: string) => void;
   toggleFrame: (id: string) => void;
-  login: (u: string, p: string) => boolean;
+  /** Returns an error message, or null on success. */
+  login: (u: string, p: string) => Promise<string | null>;
   logout: () => void;
   toast: (msg: string, tone?: "ok" | "err") => void;
   setPrefill: (p: Prefill | null) => void;
@@ -99,6 +104,8 @@ const LS_ADMIN = "imagine_admin_v1";
 const LS_REVIEWS = "imagine_reviews_v1";
 const LS_TEAM = "imagine_team_v1";
 const LS_FRAMES = "imagine_frames_v1";
+
+const cloud = isSupabaseConfigured;
 
 const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 const makeRef = () => {
@@ -119,57 +126,55 @@ function load<T>(key: string, fallback: T): T {
 const seedReviews = (): Review[] => QUOTES.map((q, i) => ({ id: `rev-${i + 1}`, ...q, published: true }));
 const seedFrames = (): GalleryFrame[] => GALLERY.map((g) => ({ ...g, published: true }));
 
+/* ————— DB row ⇄ app model mappers ————— */
+type BookingRow = Record<string, unknown>;
+const bookingToRow = (b: Booking) => ({
+  id: b.id,
+  ref: b.ref,
+  name: b.name,
+  email: b.email,
+  phone: b.phone,
+  session: b.session,
+  package_id: b.packageId,
+  date: b.date,
+  time: b.time,
+  guests: b.guests,
+  notes: b.notes,
+  status: b.status,
+  created_at: b.createdAt,
+});
+const rowToBooking = (r: BookingRow): Booking => ({
+  id: String(r.id),
+  ref: String(r.ref ?? ""),
+  name: String(r.name ?? ""),
+  email: String(r.email ?? ""),
+  phone: String(r.phone ?? ""),
+  session: String(r.session ?? ""),
+  packageId: String(r.package_id ?? ""),
+  date: String(r.date ?? ""),
+  time: String(r.time ?? ""),
+  guests: Number(r.guests ?? 1),
+  notes: String(r.notes ?? ""),
+  status: (r.status as BookingStatus) ?? "pending",
+  createdAt: String(r.created_at ?? new Date().toISOString()),
+});
+
+const memberToRow = (m: TeamMember) => ({ id: m.id, name: m.name, role: m.role, bio: m.bio, gear: m.gear, hue: m.hue, photo: m.photo ?? "", published: m.published });
+const reviewToRow = (r: Review) => ({ id: r.id, quote: r.quote, name: r.name, meta: r.meta, published: r.published });
+const frameToRow = (f: GalleryFrame) => ({ id: f.id, title: f.title, cat: f.cat, img: f.img, exif: f.exif, published: f.published });
+
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [bookings, setBookings] = useState<Booking[]>(() => load(LS_BOOKINGS, SEED_BOOKINGS));
-  const [reviews, setReviews] = useState<Review[]>(() => load(LS_REVIEWS, seedReviews()));
-  const [team, setTeam] = useState<TeamMember[]>(() => load(LS_TEAM, TEAM_SEED));
-  const [frames, setFrames] = useState<GalleryFrame[]>(() => load(LS_FRAMES, seedFrames()));
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => load(LS_ADMIN, false));
+  const [bookings, setBookings] = useState<Booking[]>(() => (cloud ? [] : load(LS_BOOKINGS, SEED_BOOKINGS)));
+  const [reviews, setReviews] = useState<Review[]>(() => (cloud ? [] : load(LS_REVIEWS, seedReviews())));
+  const [team, setTeam] = useState<TeamMember[]>(() => (cloud ? [] : load(LS_TEAM, TEAM_SEED)));
+  const [frames, setFrames] = useState<GalleryFrame[]>(() => (cloud ? [] : seedFrames()));
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => (cloud ? false : load(LS_ADMIN, false)));
+  const [ready, setReady] = useState(!cloud);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const toastId = useRef(0);
-  const quotaWarned = useRef(false);
-
-  useEffect(() => {
-    const save = (key: string, value: unknown) => {
-      try {
-        localStorage.setItem(key, JSON.stringify(value));
-      } catch {
-        if (!quotaWarned.current) {
-          quotaWarned.current = true;
-          setToasts((t) => [
-            ...t,
-            { id: ++toastId.current, msg: "Browser storage is full — uploaded images may not survive a reload. Try smaller files.", tone: "err" },
-          ]);
-        }
-      }
-    };
-    save(LS_BOOKINGS, bookings);
-  }, [bookings]);
-  useEffect(() => {
-    try {
-      localStorage.setItem(LS_REVIEWS, JSON.stringify(reviews));
-    } catch {
-      /* non-image data is tiny; ignore */
-    }
-  }, [reviews]);
-  useEffect(() => {
-    try {
-      localStorage.setItem(LS_TEAM, JSON.stringify(team));
-    } catch {
-      /* quota — keep in-memory state */
-    }
-  }, [team]);
-  useEffect(() => {
-    try {
-      localStorage.setItem(LS_FRAMES, JSON.stringify(frames));
-    } catch {
-      /* quota — keep in-memory state */
-    }
-  }, [frames]);
-  useEffect(() => {
-    localStorage.setItem(LS_ADMIN, JSON.stringify(isAdmin));
-  }, [isAdmin]);
+  const warnedQuota = useRef(false);
 
   const toast = useCallback((msg: string, tone: "ok" | "err" = "ok") => {
     const id = ++toastId.current;
@@ -177,57 +182,254 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3800);
   }, []);
 
-  const addBooking = useCallback((b: Omit<Booking, "id" | "ref" | "status" | "createdAt">) => {
-    const booking: Booking = { ...b, id: uid(), ref: makeRef(), status: "pending", createdAt: new Date().toISOString() };
-    setBookings((prev) => [booking, ...prev]);
-    return booking;
+  /* ————— hydrate from Supabase (cloud) ————— */
+  useEffect(() => {
+    if (!cloud || !supabase) return;
+    let alive = true;
+    (async () => {
+      try {
+        const [b, r, t, f, sess] = await Promise.all([
+          supabase.from("bookings").select("*").order("created_at", { ascending: false }),
+          supabase.from("reviews").select("*"),
+          supabase.from("team_members").select("*"),
+          supabase.from("gallery_frames").select("*"),
+          supabase.auth.getSession(),
+        ]);
+        if (!alive) return;
+        if (b.error || r.error || t.error || f.error) throw new Error(b.error?.message ?? r.error?.message ?? t.error?.message ?? f.error?.message);
+        setBookings((b.data as BookingRow[]).map(rowToBooking));
+        setReviews((r.data as Review[]) ?? []);
+        setTeam((t.data as TeamMember[]) ?? []);
+        setFrames((f.data as GalleryFrame[]) ?? []);
+        setIsAdmin(Boolean(sess.data.session));
+        setSyncError(null);
+      } catch (e) {
+        if (!alive) return;
+        setSyncError(e instanceof Error ? e.message : "Could not reach the cloud database.");
+      } finally {
+        if (alive) setReady(true);
+      }
+    })();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+      setIsAdmin(Boolean(session));
+    });
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
-  const setBookingStatus = useCallback((id: string, s: BookingStatus) => {
-    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: s } : b)));
-  }, []);
+  /* ————— local persistence (demo mode only) ————— */
+  useEffect(() => {
+    if (cloud) return;
+    try {
+      localStorage.setItem(LS_BOOKINGS, JSON.stringify(bookings));
+    } catch {
+      if (!warnedQuota.current) {
+        warnedQuota.current = true;
+        toast("Browser storage is full — changes may not persist after reload.", "err");
+      }
+    }
+  }, [bookings, toast]);
+  useEffect(() => {
+    if (cloud) return;
+    try {
+      localStorage.setItem(LS_REVIEWS, JSON.stringify(reviews));
+      localStorage.setItem(LS_TEAM, JSON.stringify(team));
+      localStorage.setItem(LS_FRAMES, JSON.stringify(frames));
+    } catch {
+      /* non-fatal in demo mode */
+    }
+  }, [reviews, team, frames]);
+  useEffect(() => {
+    if (cloud) return;
+    try {
+      localStorage.setItem(LS_ADMIN, JSON.stringify(isAdmin));
+    } catch {
+      /* non-fatal */
+    }
+  }, [isAdmin]);
 
-  const removeBooking = useCallback((id: string) => {
-    setBookings((prev) => prev.filter((b) => b.id !== id));
-  }, []);
+  /* ————— cloud write-through helper ————— */
+  const remote = useCallback(
+    async (op: () => PromiseLike<{ error: { message: string } | null }>) => {
+      if (!cloud || !supabase) return;
+      try {
+        const { error } = await op();
+        if (error) throw new Error(error.message);
+        setSyncError(null);
+      } catch (e) {
+        setSyncError(`Cloud sync failed (${e instanceof Error ? e.message : "network"}) — the change is kept on this device only.`);
+      }
+    },
+    []
+  );
 
-  const addReview = useCallback((r: Omit<Review, "id">) => setReviews((p) => [{ ...r, id: uid() }, ...p]), []);
-  const updateReview = useCallback((id: string, r: Omit<Review, "id">) => {
-    setReviews((p) => p.map((x) => (x.id === id ? { ...r, id } : x)));
-  }, []);
-  const removeReview = useCallback((id: string) => setReviews((p) => p.filter((x) => x.id !== id)), []);
+  /* ————— bookings ————— */
+  const addBooking = useCallback(
+    (b: Omit<Booking, "id" | "ref" | "status" | "createdAt">) => {
+      const booking: Booking = { ...b, id: uid(), ref: makeRef(), status: "pending", createdAt: new Date().toISOString() };
+      setBookings((prev) => [booking, ...prev]);
+      void remote(() => supabase!.from("bookings").insert(bookingToRow(booking)));
+      return booking;
+    },
+    [remote]
+  );
+
+  const setBookingStatus = useCallback(
+    (id: string, s: BookingStatus) => {
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: s } : b)));
+      void remote(() => supabase!.from("bookings").update({ status: s }).eq("id", id));
+    },
+    [remote]
+  );
+
+  const removeBooking = useCallback(
+    (id: string) => {
+      setBookings((prev) => prev.filter((b) => b.id !== id));
+      void remote(() => supabase!.from("bookings").delete().eq("id", id));
+    },
+    [remote]
+  );
+
+  /* ————— reviews ————— */
+  const addReview = useCallback(
+    (r: Omit<Review, "id">) => {
+      const row = { ...r, id: uid() };
+      setReviews((p) => [row, ...p]);
+      void remote(() => supabase!.from("reviews").insert(reviewToRow(row)));
+    },
+    [remote]
+  );
+  const updateReview = useCallback(
+    (id: string, r: Omit<Review, "id">) => {
+      setReviews((p) => p.map((x) => (x.id === id ? { ...r, id } : x)));
+      void remote(() => supabase!.from("reviews").update(reviewToRow({ ...r, id } as Review)).eq("id", id));
+    },
+    [remote]
+  );
+  const removeReview = useCallback(
+    (id: string) => {
+      setReviews((p) => p.filter((x) => x.id !== id));
+      void remote(() => supabase!.from("reviews").delete().eq("id", id));
+    },
+    [remote]
+  );
   const toggleReview = useCallback(
-    (id: string) => setReviews((p) => p.map((x) => (x.id === id ? { ...x, published: !x.published } : x))),
-    []
+    (id: string) => {
+      let next = false;
+      setReviews((p) =>
+        p.map((x) => {
+          if (x.id === id) {
+            next = !x.published;
+            return { ...x, published: next };
+          }
+          return x;
+        })
+      );
+      void remote(() => supabase!.from("reviews").update({ published: next }).eq("id", id));
+    },
+    [remote]
   );
 
-  const addMember = useCallback((m: Omit<TeamMember, "id">) => setTeam((p) => [...p, { ...m, id: uid() }]), []);
-  const updateMember = useCallback((id: string, m: Omit<TeamMember, "id">) => {
-    setTeam((p) => p.map((x) => (x.id === id ? { ...m, id } : x)));
-  }, []);
-  const removeMember = useCallback((id: string) => setTeam((p) => p.filter((x) => x.id !== id)), []);
+  /* ————— team ————— */
+  const addMember = useCallback(
+    (m: Omit<TeamMember, "id">) => {
+      const row = { ...m, id: uid() };
+      setTeam((p) => [...p, row]);
+      void remote(() => supabase!.from("team_members").insert(memberToRow(row)));
+    },
+    [remote]
+  );
+  const updateMember = useCallback(
+    (id: string, m: Omit<TeamMember, "id">) => {
+      setTeam((p) => p.map((x) => (x.id === id ? { ...m, id } : x)));
+      void remote(() => supabase!.from("team_members").update(memberToRow({ ...m, id } as TeamMember)).eq("id", id));
+    },
+    [remote]
+  );
+  const removeMember = useCallback(
+    (id: string) => {
+      setTeam((p) => p.filter((x) => x.id !== id));
+      void remote(() => supabase!.from("team_members").delete().eq("id", id));
+    },
+    [remote]
+  );
   const toggleMember = useCallback(
-    (id: string) => setTeam((p) => p.map((x) => (x.id === id ? { ...x, published: !x.published } : x))),
-    []
+    (id: string) => {
+      let next = false;
+      setTeam((p) =>
+        p.map((x) => {
+          if (x.id === id) {
+            next = !x.published;
+            return { ...x, published: next };
+          }
+          return x;
+        })
+      );
+      void remote(() => supabase!.from("team_members").update({ published: next }).eq("id", id));
+    },
+    [remote]
   );
 
-  const addFrame = useCallback((f: Omit<GalleryFrame, "id">) => setFrames((p) => [...p, { ...f, id: uid() }]), []);
-  const updateFrame = useCallback((id: string, f: Omit<GalleryFrame, "id">) => {
-    setFrames((p) => p.map((x) => (x.id === id ? { ...f, id } : x)));
-  }, []);
-  const removeFrame = useCallback((id: string) => setFrames((p) => p.filter((x) => x.id !== id)), []);
+  /* ————— frames ————— */
+  const addFrame = useCallback(
+    (f: Omit<GalleryFrame, "id">) => {
+      const row = { ...f, id: uid() };
+      setFrames((p) => [...p, row]);
+      void remote(() => supabase!.from("gallery_frames").insert(frameToRow(row)));
+    },
+    [remote]
+  );
+  const updateFrame = useCallback(
+    (id: string, f: Omit<GalleryFrame, "id">) => {
+      setFrames((p) => p.map((x) => (x.id === id ? { ...f, id } : x)));
+      void remote(() => supabase!.from("gallery_frames").update(frameToRow({ ...f, id } as GalleryFrame)).eq("id", id));
+    },
+    [remote]
+  );
+  const removeFrame = useCallback(
+    (id: string) => {
+      setFrames((p) => p.filter((x) => x.id !== id));
+      void remote(() => supabase!.from("gallery_frames").delete().eq("id", id));
+    },
+    [remote]
+  );
   const toggleFrame = useCallback(
-    (id: string) => setFrames((p) => p.map((x) => (x.id === id ? { ...x, published: !x.published } : x))),
-    []
+    (id: string) => {
+      let next = false;
+      setFrames((p) =>
+        p.map((x) => {
+          if (x.id === id) {
+            next = !x.published;
+            return { ...x, published: next };
+          }
+          return x;
+        })
+      );
+      void remote(() => supabase!.from("gallery_frames").update({ published: next }).eq("id", id));
+    },
+    [remote]
   );
 
-  const login = useCallback((u: string, p: string) => {
+  /* ————— auth ————— */
+  const login = useCallback(async (u: string, p: string): Promise<string | null> => {
+    if (cloud && supabase) {
+      const { error } = await supabase.auth.signInWithPassword({ email: u.trim(), password: p });
+      if (error) return error.message === "Invalid login credentials" ? "Invalid email or password." : error.message;
+      setIsAdmin(true);
+      return null;
+    }
     const ok = u.trim().toLowerCase() === "admin" && p === "imagine24";
     if (ok) setIsAdmin(true);
-    return ok;
+    return ok ? null : "Invalid credentials.";
   }, []);
 
-  const logout = useCallback(() => setIsAdmin(false), []);
+  const logout = useCallback(() => {
+    setIsAdmin(false);
+    if (cloud && supabase) void supabase.auth.signOut();
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -236,6 +438,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       team,
       frames,
       isAdmin,
+      cloud,
+      ready,
+      syncError,
       toasts,
       prefill,
       addBooking,
@@ -258,7 +463,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toast,
       setPrefill,
     }),
-    [bookings, reviews, team, frames, isAdmin, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, login, logout, toast]
+    [bookings, reviews, team, frames, isAdmin, ready, syncError, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, login, logout, toast]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
