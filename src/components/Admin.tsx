@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { IMG, getPackage } from "../data";
+import { hasRecoveryInUrl } from "../lib/supabase";
 import { useStore } from "../store";
 import type { Booking, BookingStatus } from "../store";
 import {
@@ -47,14 +48,33 @@ const TABS = [
 type Tab = (typeof TABS)[number]["id"];
 
 /* ————————————————— LOGIN ————————————————— */
+type AuthView = "signin" | "forgot" | "sent" | "reset" | "done";
+
 export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) {
-  const { login, toast, cloud } = useStore();
+  const { login, requestReset, setNewPassword, toast, cloud, recovery } = useStore();
+  const [view, setView] = useState<AuthView>(() => (recovery || hasRecoveryInUrl() ? "reset" : "signin"));
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
   const [show, setShow] = useState(false);
+  const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
+  const [sentTo, setSentTo] = useState("");
+
+  /* once the new password lands, glide into the desk */
+  useEffect(() => {
+    if (view !== "done") return;
+    const t = window.setTimeout(onSuccess, 1600);
+    return () => window.clearTimeout(t);
+  }, [view, onSuccess]);
+
+  const switchView = (v: AuthView) => {
+    setView(v);
+    setError("");
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -67,6 +87,55 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
       onSuccess();
     } else {
       setError(cloud ? err : "Credentials not recognised. Try the demo pair below.");
+      setShakeKey((k) => k + 1);
+    }
+  };
+
+  const sendReset = async () => {
+    if (busy) return;
+    if (!/.+@.+\..+/.test(user.trim())) {
+      setError("Enter the email you sign in with.");
+      setShakeKey((k) => k + 1);
+      return;
+    }
+    setBusy(true);
+    const err = await requestReset(user);
+    setBusy(false);
+    if (!err) {
+      setSentTo(user.trim());
+      switchView("sent");
+    } else {
+      setError(err);
+      setShakeKey((k) => k + 1);
+    }
+  };
+
+  const submitForgot = async (e: FormEvent) => {
+    e.preventDefault();
+    await sendReset();
+  };
+
+  const submitReset = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    if (newPass.length < 8) {
+      setError("Use at least 8 characters — this key opens the whole desk.");
+      setShakeKey((k) => k + 1);
+      return;
+    }
+    if (newPass !== confirmPass) {
+      setError("The two passwords don't match.");
+      setShakeKey((k) => k + 1);
+      return;
+    }
+    setBusy(true);
+    const err = await setNewPassword(newPass);
+    setBusy(false);
+    if (!err) {
+      toast("Password updated — welcome back.");
+      switchView("done");
+    } else {
+      setError(err);
       setShakeKey((k) => k + 1);
     }
   };
@@ -105,16 +174,54 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
 
           <div className="mb-2 flex items-center gap-2">
             <span className="pulse-dot h-2 w-2 rounded-full bg-[var(--amber)]" />
-            <span className="kicker">Staff only</span>
+            <span className="kicker">
+              {view === "signin" ? "Staff only" : view === "sent" ? "Email dispatched" : view === "done" ? "Key cut" : "Password reset"}
+            </span>
           </div>
           <h1 className="font-display text-6xl leading-[0.98]">
-            Back <span className="italic text-[var(--amber)]">office.</span>
+            {view === "signin" && (
+              <>
+                Back <span className="italic text-[var(--amber)]">office.</span>
+              </>
+            )}
+            {view === "forgot" && (
+              <>
+                Lost your <span className="italic text-[var(--amber)]">key?</span>
+              </>
+            )}
+            {view === "sent" && (
+              <>
+                Check your <span className="italic text-[var(--amber)]">inbox.</span>
+              </>
+            )}
+            {view === "reset" && (
+              <>
+                Fresh <span className="italic text-[var(--amber)]">password.</span>
+              </>
+            )}
+            {view === "done" && (
+              <>
+                All <span className="italic text-[var(--amber)]">set.</span>
+              </>
+            )}
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-[var(--muted)]">
-            Sign in to manage every booking request, the testimonials wall, the crew roster and the gallery archive.
-            The public site feeds this desk in real time.
+            {view === "signin" &&
+              "Sign in to manage every booking request, the testimonials wall, the crew roster and the gallery archive. The public site feeds this desk in real time."}
+            {view === "forgot" &&
+              "Enter your admin email and we'll dispatch a reset link that brings you straight back to this desk."}
+            {view === "sent" && (
+              <>
+                If an account exists for <span className="font-medium text-[var(--ink)]">{sentTo}</span>, a reset link is on
+                its way. Open it on this device — it stays hot for one hour.
+              </>
+            )}
+            {view === "reset" &&
+              "The link checked out. Pick something strong — at least 8 characters — and the desk is yours again."}
+            {view === "done" && "Your new password is live and you're signed in. Opening the desk…"}
           </p>
 
+          {view === "signin" && (
           <form key={shakeKey} onSubmit={submit} className={`panel mt-9 p-7 shadow-[0_24px_50px_-30px_rgba(18,42,62,0.35)] ${error ? "shake" : ""}`} noValidate>
             <div>
               <label className="label" htmlFor="adm-user">{cloud ? "Admin email" : "Username"}</label>
@@ -156,20 +263,25 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
               </div>
             </div>
 
+            {cloud && (
+              <div className="mt-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => switchView("forgot")}
+                  className="uline font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--muted)] transition-colors hover:text-[var(--amber)]"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
+
             {error && <p className="mt-4 border-l-2 border-[var(--ember)] pl-3 text-xs text-[var(--ember)]">{error}</p>}
 
             <button type="submit" className="btn-solid mt-6 w-full justify-center" disabled={busy}>
               <IconKey width={16} height={16} /> {busy ? "Checking the darkroom…" : "Unlock the desk"}
             </button>
 
-            {cloud ? (
-              <div className="mt-6 border border-dashed border-[var(--sage)]/50 bg-[rgba(47,138,99,0.06)] p-4">
-                <div className="font-mono text-[9px] tracking-[0.3em] uppercase text-[var(--sage)]">Cloud mode · Supabase</div>
-                <div className="mt-2 font-mono text-[11px] leading-relaxed text-[var(--muted)]">
-                  Signed-in staff get full control; visitors can only send bookings and read published content (row-level security).
-                </div>
-              </div>
-            ) : (
+            {!cloud && (
               <div className="mt-6 border border-dashed border-[var(--line)] bg-[var(--bg2)] p-4">
                 <div className="font-mono text-[9px] tracking-[0.3em] uppercase text-[var(--dim)]">Demo access</div>
                 <div className="mt-2 font-mono text-xs text-[var(--muted)]">
@@ -178,6 +290,138 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
               </div>
             )}
           </form>
+          )}
+
+          {/* ——— forgot: request the reset link ——— */}
+          {view === "forgot" && (
+            <form
+              key={`f${shakeKey}`}
+              onSubmit={submitForgot}
+              className={`panel pop-in mt-9 p-7 shadow-[0_24px_50px_-30px_rgba(18,42,62,0.35)] ${error ? "shake" : ""}`}
+              noValidate
+            >
+              <label className="label" htmlFor="adm-forgot-email">
+                Admin email
+              </label>
+              <input
+                id="adm-forgot-email"
+                type="email"
+                className={`input ${error ? "err" : ""}`}
+                placeholder="you@imagine.studio"
+                autoComplete="email"
+                value={user}
+                onChange={(e) => {
+                  setUser(e.target.value);
+                  setError("");
+                }}
+              />
+              {error && <p className="mt-4 border-l-2 border-[var(--ember)] pl-3 text-xs text-[var(--ember)]">{error}</p>}
+              <button type="submit" className="btn-solid mt-6 w-full justify-center" disabled={busy}>
+                <IconMail width={16} height={16} /> {busy ? "Sending…" : "Send reset link"}
+              </button>
+              <button type="button" onClick={() => switchView("signin")} className="btn-ghost mt-3 w-full justify-center">
+                <IconBack width={15} height={15} /> Back to sign in
+              </button>
+            </form>
+          )}
+
+          {/* ——— sent: link is on its way ——— */}
+          {view === "sent" && (
+            <div className="panel pop-in mt-9 p-7 shadow-[0_24px_50px_-30px_rgba(18,42,62,0.35)]">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center border border-[var(--amber)]/40 bg-[rgba(13,127,194,0.08)] text-[var(--amber)]">
+                  <IconMail width={18} height={18} />
+                </span>
+                <span className="font-mono text-[10px] tracking-[0.24em] uppercase text-[var(--muted)]">Reset link dispatched</span>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-[var(--muted)]">
+                Tap <span className="font-medium text-[var(--ink)]">Reset password</span> inside the email and you'll land right
+                back here to choose a new one. Nothing in the inbox after a minute? Check spam, or send it again below.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button onClick={sendReset} className="btn-ghost flex-1 justify-center" disabled={busy}>
+                  {busy ? "Sending…" : "Send again"}
+                </button>
+                <button onClick={() => switchView("signin")} className="btn-solid flex-1 justify-center">
+                  Back to sign in
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ——— reset: set the new password ——— */}
+          {view === "reset" && (
+            <form
+              key={`r${shakeKey}`}
+              onSubmit={submitReset}
+              className={`panel pop-in mt-9 p-7 shadow-[0_24px_50px_-30px_rgba(18,42,62,0.35)] ${error ? "shake" : ""}`}
+              noValidate
+            >
+              <label className="label" htmlFor="adm-new-pass">
+                New password
+              </label>
+              <div className="relative">
+                <input
+                  id="adm-new-pass"
+                  type={showNew ? "text" : "password"}
+                  className={`input pr-12 ${error ? "err" : ""}`}
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                  value={newPass}
+                  onChange={(e) => {
+                    setNewPass(e.target.value);
+                    setError("");
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNew((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] transition-colors hover:text-[var(--amber)]"
+                  aria-label={showNew ? "Hide password" : "Show password"}
+                >
+                  {showNew ? <IconEyeOff width={17} height={17} /> : <IconEye width={17} height={17} />}
+                </button>
+              </div>
+
+              <div className="mt-5">
+                <label className="label" htmlFor="adm-confirm-pass">
+                  Confirm password
+                </label>
+                <input
+                  id="adm-confirm-pass"
+                  type={showNew ? "text" : "password"}
+                  className={`input ${error ? "err" : ""}`}
+                  placeholder="Once more, with feeling"
+                  autoComplete="new-password"
+                  value={confirmPass}
+                  onChange={(e) => {
+                    setConfirmPass(e.target.value);
+                    setError("");
+                  }}
+                />
+              </div>
+
+              {error && <p className="mt-4 border-l-2 border-[var(--ember)] pl-3 text-xs text-[var(--ember)]">{error}</p>}
+
+              <button type="submit" className="btn-solid mt-6 w-full justify-center" disabled={busy}>
+                <IconKey width={16} height={16} /> {busy ? "Cutting the key…" : "Set new password"}
+              </button>
+              <button type="button" onClick={() => switchView("signin")} className="btn-ghost mt-3 w-full justify-center">
+                <IconBack width={15} height={15} /> Back to sign in
+              </button>
+            </form>
+          )}
+
+          {/* ——— done: signed in, gliding to the desk ——— */}
+          {view === "done" && (
+            <div className="panel pop-in mt-9 p-8 text-center shadow-[0_24px_50px_-30px_rgba(18,42,62,0.35)]">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.1)] text-[var(--sage)]">
+                <IconCheck width={22} height={22} />
+              </span>
+              <div className="mt-4 font-mono text-[10px] tracking-[0.24em] uppercase text-[var(--sage)]">Key cut successfully</div>
+              <p className="mt-2 text-sm text-[var(--muted)]">Use it next time you sign in.</p>
+            </div>
+          )}
 
           {!cloud && (
             <p className="mt-4 border border-[var(--line-soft)] bg-white p-3 text-center font-mono text-[9.5px] leading-relaxed tracking-[0.06em] text-[var(--dim)]">

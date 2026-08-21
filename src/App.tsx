@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { StoreProvider, useStore } from "./store";
+import { hasRecoveryInUrl } from "./lib/supabase";
 import Nav from "./components/Nav";
 import Hero from "./components/Hero";
 import { About, Services } from "./components/Sections";
@@ -36,6 +37,11 @@ function Shell() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [view]);
+
+  /* a password-reset link should land on the login screen, ready to set a new password */
+  useEffect(() => {
+    if (hasRecoveryInUrl()) setView("login");
+  }, []);
 
   const goAdmin = () => setView(isAdmin ? "admin" : "login");
 

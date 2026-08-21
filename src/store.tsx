@@ -92,6 +92,12 @@ interface Store {
   toggleFrame: (id: string) => void;
   /** Returns an error message, or null on success. */
   login: (u: string, p: string) => Promise<string | null>;
+  /** True while a password-recovery session is active (reset link was opened). */
+  recovery: boolean;
+  /** Sends a password-reset email. Returns an error message, or null on success. */
+  requestReset: (email: string) => Promise<string | null>;
+  /** Sets a new password using the recovery session. Returns an error message, or null on success. */
+  setNewPassword: (password: string) => Promise<string | null>;
   logout: () => void;
   toast: (msg: string, tone?: "ok" | "err") => void;
   setPrefill: (p: Prefill | null) => void;
@@ -171,6 +177,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState<boolean>(() => (cloud ? false : load(LS_ADMIN, false)));
   const [ready, setReady] = useState(!cloud);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [recovery, setRecovery] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const toastId = useRef(0);
@@ -202,6 +209,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setTeam((t.data as TeamMember[]) ?? []);
         setFrames((f.data as GalleryFrame[]) ?? []);
         setIsAdmin(Boolean(sess.data.session));
+        setRecovery(Boolean((sess.data.session as { recovery?: boolean } | null)?.recovery));
         setSyncError(null);
       } catch (e) {
         if (!alive) return;
@@ -431,6 +439,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (cloud && supabase) void supabase.auth.signOut();
   }, []);
 
+  const requestReset = useCallback(async (email: string): Promise<string | null> => {
+    if (!cloud || !supabase) return "Password reset is only available in cloud mode.";
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    if (error) return error.message;
+    return null;
+  }, []);
+
+  const setNewPassword = useCallback(async (password: string): Promise<string | null> => {
+    if (!cloud || !supabase) return "Password reset is only available in cloud mode.";
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) return error.message;
+    setIsAdmin(true);
+    setRecovery(false);
+    /* strip the recovery token from the address bar */
+    window.history.replaceState(null, "", window.location.pathname);
+    return null;
+  }, []);
+
   const value = useMemo(
     () => ({
       bookings,
@@ -459,11 +486,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeFrame,
       toggleFrame,
       login,
+      recovery,
+      requestReset,
+      setNewPassword,
       logout,
       toast,
       setPrefill,
     }),
-    [bookings, reviews, team, frames, isAdmin, ready, syncError, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, login, logout, toast]
+    [bookings, reviews, team, frames, isAdmin, ready, syncError, recovery, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, login, requestReset, setNewPassword, logout, toast]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

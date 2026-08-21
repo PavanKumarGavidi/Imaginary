@@ -22,6 +22,17 @@ export const isSupabaseConfigured = Boolean(url && anonKey && /^https?:\/\//.tes
 
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(url as string, anonKey as string, {
-      auth: { persistSession: true, autoRefreshToken: true },
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
     })
   : null;
+
+/**
+ * True when the current URL is a password-recovery link
+ * (implicit flow: `#access_token=…&type=recovery`, PKCE flow: `?code=…`).
+ */
+export function hasRecoveryInUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  const hash = window.location.hash || "";
+  const query = window.location.search || "";
+  return hash.includes("type=recovery") || (query.includes("code=") && !query.includes("utm_"));
+}
