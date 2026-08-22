@@ -55,6 +55,11 @@ type AuthView = "signin" | "forgot" | "sent" | "reset" | "done";
 export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess: () => void }) {
   const { login, requestReset, setNewPassword, toast, cloud, recovery, sitePhotos } = useStore();
   const [view, setView] = useState<AuthView>(() => (recovery || hasRecoveryInUrl() ? "reset" : "signin"));
+
+  /* Supabase may confirm the recovery session a moment after the page mounts */
+  useEffect(() => {
+    if (recovery && view === "signin") setView("reset");
+  }, [recovery, view]);
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [newPass, setNewPass] = useState("");

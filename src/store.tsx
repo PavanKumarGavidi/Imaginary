@@ -351,8 +351,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((evt, session) => {
       setIsAdmin(Boolean(session));
+      /* an emailed reset link was just opened — flag recovery so the UI shows the new-password form */
+      if (evt === "PASSWORD_RECOVERY") setRecovery(true);
+      if (evt === "SIGNED_OUT") setRecovery(false);
     });
     return () => {
       alive = false;

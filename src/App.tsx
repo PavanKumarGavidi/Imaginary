@@ -31,7 +31,7 @@ function BootScreen() {
 }
 
 function Shell() {
-  const { isAdmin, setPrefill, ready } = useStore();
+  const { isAdmin, setPrefill, ready, recovery } = useStore();
   const [view, setView] = useState<View>("site");
 
   useEffect(() => {
@@ -42,6 +42,11 @@ function Shell() {
   useEffect(() => {
     if (hasRecoveryInUrl()) setView("login");
   }, []);
+
+  /* if Supabase confirms the recovery session a beat later (or the user lands mid-browse), route them to login */
+  useEffect(() => {
+    if (recovery && view !== "login") setView("login");
+  }, [recovery, view]);
 
   const goAdmin = () => setView(isAdmin ? "admin" : "login");
 
