@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { FAQS, PACKAGES } from "../data";
 import { useStore } from "../store";
 import { Marquee, Reveal, SectionHead } from "./ui";
 import { IconArrow, IconCheck, IconChevron, IconStar } from "./Icons";
 
 /* ——————————————————— PACKAGES ——————————————————— */
 export function Pricing({ onChoose }: { onChoose: (packageId: string) => void }) {
+  const { content } = useStore();
   return (
     <section id="packages" className="relative border-t border-[var(--line-soft)] bg-[rgba(233,244,251,0.6)] py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
@@ -17,7 +17,7 @@ export function Pricing({ onChoose }: { onChoose: (packageId: string) => void })
         />
 
         <div className="grid items-stretch gap-6 lg:grid-cols-[1fr_1.16fr_1fr]">
-          {PACKAGES.map((p, i) => (
+          {content.packages.map((p, i) => (
             <Reveal key={p.id} delay={i * 110} className="h-full">
               <article
                 className={`relative flex h-full flex-col p-8 transition-all duration-400 hover:-translate-y-2 ${
@@ -126,6 +126,7 @@ export function Testimonials() {
 
 /* ——————————————————— FAQ ——————————————————— */
 export function Faq() {
+  const { content } = useStore();
   const [open, setOpen] = useState<number | null>(0);
   return (
     <section id="faq" className="relative border-t border-[var(--line-soft)] bg-[rgba(233,244,251,0.6)] py-24 md:py-32">
@@ -145,7 +146,7 @@ export function Faq() {
           </div>
 
           <div>
-            {FAQS.map((f, i) => {
+            {content.faqs.map((f, i) => {
               const isOpen = open === i;
               return (
                 <Reveal key={f.q} delay={i * 60}>

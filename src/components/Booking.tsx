@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { PACKAGES, SESSIONS, STUDIO, TIME_SLOTS, getPackage } from "../data";
+import { TIME_SLOTS } from "../data";
 import type { Booking as BookingType } from "../store";
 import { useStore } from "../store";
 import { Reveal } from "./ui";
@@ -34,7 +34,9 @@ const EMPTY: FormState = {
 };
 
 export default function BookingSection() {
-  const { addBooking, prefill, toast } = useStore();
+  const { addBooking, prefill, toast, content } = useStore();
+  const ct = content.contact;
+  const pkgById = (id: string) => content.packages.find((p) => p.id === id);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitted, setSubmitted] = useState<BookingType | null>(null);
@@ -95,7 +97,7 @@ export default function BookingSection() {
     }, 650);
   };
 
-  const pkg = getPackage(form.packageId);
+  const pkg = pkgById(form.packageId);
 
   return (
     <section id="book" className="relative border-t border-[var(--line-soft)] py-24 md:py-32">
@@ -140,18 +142,18 @@ export default function BookingSection() {
             <Reveal delay={220}>
               <div className="panel mt-9 p-6">
                 <div className="space-y-3.5 text-sm">
-                  <a href={`tel:${STUDIO.phone.replace(/[^0-9]/g, "")}`} className="flex items-center gap-3 text-[var(--muted)] transition-colors hover:text-[var(--amber)]">
-                    <IconPhone width={16} height={16} className="text-[var(--amber)]" /> {STUDIO.phone}
+                  <a href={`tel:${ct.phone.replace(/[^0-9]/g, "")}`} className="flex items-center gap-3 text-[var(--muted)] transition-colors hover:text-[var(--amber)]">
+                    <IconPhone width={16} height={16} className="text-[var(--amber)]" /> {ct.phone}
                   </a>
-                  <a href={`mailto:${STUDIO.email}`} className="flex items-center gap-3 text-[var(--muted)] transition-colors hover:text-[var(--amber)]">
-                    <IconMail width={16} height={16} className="text-[var(--amber)]" /> {STUDIO.email}
+                  <a href={`mailto:${ct.email}`} className="flex items-center gap-3 text-[var(--muted)] transition-colors hover:text-[var(--amber)]">
+                    <IconMail width={16} height={16} className="text-[var(--amber)]" /> {ct.email}
                   </a>
                   <div className="flex items-center gap-3 text-[var(--muted)]">
-                    <IconPin width={16} height={16} className="text-[var(--amber)]" /> {STUDIO.addr}, {STUDIO.city}
+                    <IconPin width={16} height={16} className="text-[var(--amber)]" /> {ct.address}, {ct.city}
                   </div>
                 </div>
                 <div className="mt-5 border-t border-[var(--line-soft)] pt-4">
-                  {STUDIO.hours.map(([d, h]) => (
+                  {ct.hours.map(([d, h]: [string, string]) => (
                     <div key={d} className="flex justify-between py-1 font-mono text-[11px] tracking-[0.14em] text-[var(--dim)]">
                       <span className="uppercase">{d}</span>
                       <span className="text-[var(--muted)]">{h}</span>
@@ -194,7 +196,7 @@ export default function BookingSection() {
                     ["Client", submitted.name],
                     ["Email", submitted.email],
                     ["Session", submitted.session],
-                    ["Package", `${getPackage(submitted.packageId)?.name} — $${getPackage(submitted.packageId)?.price}`],
+                    ["Package", `${pkgById(submitted.packageId)?.name} — $${pkgById(submitted.packageId)?.price}`],
                     ["Date", fmtDate(submitted.date)],
                     ["Call time", `${submitted.time} · ${submitted.guests} guest${submitted.guests > 1 ? "s" : ""}`],
                   ].map(([k, v]) => (
@@ -257,8 +259,8 @@ export default function BookingSection() {
                     <label className="label" htmlFor="bk-session">Session type *</label>
                     <select id="bk-session" className={`input ${errors.session ? "err" : ""}`} value={form.session} onChange={set("session")}>
                       <option value="">Select…</option>
-                      {SESSIONS.map((s) => (
-                        <option key={s} value={s}>{s}</option>
+                      {content.services.map((s) => (
+                        <option key={s.id} value={s.title}>{s.title}</option>
                       ))}
                     </select>
                     {errors.session && <p className="mt-1.5 text-xs text-[var(--ember)]">{errors.session}</p>}
@@ -266,7 +268,7 @@ export default function BookingSection() {
                   <div>
                     <label className="label" htmlFor="bk-package">Package *</label>
                     <select id="bk-package" className={`input ${errors.packageId ? "err" : ""}`} value={form.packageId} onChange={set("packageId")}>
-                      {PACKAGES.map((p) => (
+                      {content.packages.map((p) => (
                         <option key={p.id} value={p.id}>{p.name} — ${p.price}</option>
                       ))}
                     </select>
