@@ -1,5 +1,4 @@
 import type { ComponentType, SVGProps } from "react";
-import { SERVICES } from "../data";
 import type { Service } from "../data";
 import { useStore } from "../store";
 import { CountUp, Reveal, SectionHead } from "./ui";
@@ -13,20 +12,6 @@ const SERVICE_ICONS: Record<Service["icon"], ComponentType<SVGProps<SVGSVGElemen
   sprout: IconSprout,
   stage: IconStage,
 };
-
-const STATS = [
-  { v: 14, suffix: "", label: "Years behind the lens" },
-  { v: 2400, suffix: "+", label: "Sessions delivered" },
-  { v: 38, suffix: "", label: "Awards & press features" },
-  { v: 96, suffix: "%", label: "Clients who rebook" },
-];
-
-const PROCESS = [
-  { n: "01", t: "The brief", d: "A 15-minute call or studio coffee. We map mood, wardrobe and the frames that matter." },
-  { n: "02", t: "The shoot", d: "Unhurried, directed sessions — digital and, if you like, 35mm or 120 film on the side." },
-  { n: "03", t: "The darkroom", d: "Every select is colour-graded and retouched by hand. Film is developed and scanned in-house." },
-  { n: "04", t: "The handoff", d: "A private gallery, print-ready files, and archival pigment prints from our own press." },
-];
 
 /* ——————————————————— ABOUT / STUDIO ——————————————————— */
 export function About() {
@@ -90,10 +75,10 @@ export function About() {
             </Reveal>
 
             <div className="mt-10">
-              {PROCESS.map((p, i) => (
-                <Reveal key={p.n} delay={i * 80}>
+              {ab.process.map((p, i) => (
+                <Reveal key={p.t} delay={i * 80}>
                   <div className="group flex gap-6 border-t border-[var(--line-soft)] py-5 transition-all duration-300 hover:translate-x-2 hover:border-[var(--amber)]">
-                    <span className="font-mono text-xs tracking-[0.2em] text-[var(--amber)]">{p.n}</span>
+                    <span className="font-mono text-xs tracking-[0.2em] text-[var(--amber)]">{String(i + 1).padStart(2, "0")}</span>
                     <div>
                       <h3 className="font-display text-lg tracking-wide uppercase text-[var(--ink)]">{p.t}</h3>
                       <p className="mt-1.5 max-w-md text-sm leading-relaxed text-[var(--muted)]">{p.d}</p>
@@ -111,19 +96,21 @@ export function About() {
 
 /* ——————————————————— SERVICES ——————————————————— */
 export function Services({ onBookSession }: { onBookSession: (session: string) => void }) {
+  const { content } = useStore();
+  const services = content.services;
   return (
     <section id="services" className="relative border-t border-[var(--line-soft)] bg-[rgba(233,244,251,0.6)] py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionHead
           num="02"
           label="What we shoot"
-          title={<>Six ways to sit for us.</>}
+          title={<>{services.length} ways to sit for us.</>}
           right={<span className="hidden font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--dim)] sm:block">All sessions include in-house retouch</span>}
         />
 
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {SERVICES.map((s, i) => {
-            const Icon = SERVICE_ICONS[s.icon];
+          {services.map((s, i) => {
+            const Icon = SERVICE_ICONS[s.icon] ?? IconLens;
             return (
               <Reveal key={s.id} delay={(i % 3) * 100} className={i % 3 === 1 ? "lg:translate-y-6" : ""}>
                 <article className="group relative flex h-full flex-col border border-[var(--line-soft)] bg-[var(--panel)] p-7 transition-all duration-400 hover:-translate-y-1.5 hover:border-[var(--amber)] hover:shadow-[0_24px_50px_-30px_rgba(0,0,0,0.9)]">

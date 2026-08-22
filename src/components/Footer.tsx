@@ -1,7 +1,9 @@
-import { STUDIO } from "../data";
+import { useStore } from "../store";
 import { IconAperture, IconInstagram, IconKey, IconMail, IconPhone, IconPin } from "./Icons";
 
 export default function Footer({ onAdmin }: { onAdmin: () => void }) {
+  const { content } = useStore();
+  const c = content.contact;
   return (
     <footer id="contact" className="relative overflow-hidden border-t border-[var(--line-soft)] bg-[rgba(232,243,250,0.85)]">
       <div className="mx-auto max-w-7xl px-5 pt-20 md:px-8">
@@ -29,7 +31,7 @@ export default function Footer({ onAdmin }: { onAdmin: () => void }) {
               ].map((s) => (
                 <a
                   key={s.label}
-                  href={s.label === "Instagram" ? "#top" : s.label === "Email" ? `mailto:${STUDIO.email}` : `tel:${STUDIO.phone.replace(/[^0-9]/g, "")}`}
+                  href={s.label === "Instagram" ? "#top" : s.label === "Email" ? `mailto:${c.email}` : `tel:${c.phone.replace(/[^0-9]/g, "")}`}
                   aria-label={s.label}
                   className="flex h-10 w-10 items-center justify-center border border-[var(--line)] text-[var(--muted)] transition-all hover:-translate-y-1 hover:border-[var(--amber)] hover:text-[var(--amber)]"
                 >
@@ -44,11 +46,11 @@ export default function Footer({ onAdmin }: { onAdmin: () => void }) {
             <div className="mt-5 space-y-2 text-sm text-[var(--muted)]">
               <p className="flex items-start gap-2.5">
                 <IconPin width={15} height={15} className="mt-0.5 shrink-0 text-[var(--amber)]" />
-                <span>{STUDIO.addr}<br />{STUDIO.city}</span>
+                <span>{c.address}<br />{c.city}</span>
               </p>
             </div>
             <div className="mt-5">
-              {STUDIO.hours.map(([d, h]) => (
+              {c.hours.map(([d, h]: [string, string]) => (
                 <div key={d} className="flex justify-between gap-6 py-1 font-mono text-[11px] tracking-[0.12em] text-[var(--dim)]">
                   <span className="uppercase">{d}</span>
                   <span className="text-[var(--muted)]">{h}</span>
@@ -60,11 +62,11 @@ export default function Footer({ onAdmin }: { onAdmin: () => void }) {
           <div>
             <h4 className="kicker">Talk</h4>
             <div className="mt-5 space-y-3 text-sm">
-              <a href={`tel:${STUDIO.phone.replace(/[^0-9]/g, "")}`} className="flex items-center gap-2.5 text-[var(--muted)] transition-colors hover:text-[var(--amber)]">
-                <IconPhone width={15} height={15} className="text-[var(--amber)]" /> {STUDIO.phone}
+              <a href={`tel:${c.phone.replace(/[^0-9]/g, "")}`} className="flex items-center gap-2.5 text-[var(--muted)] transition-colors hover:text-[var(--amber)]">
+                <IconPhone width={15} height={15} className="text-[var(--amber)]" /> {c.phone}
               </a>
-              <a href={`mailto:${STUDIO.email}`} className="flex items-center gap-2.5 text-[var(--muted)] transition-colors hover:text-[var(--amber)]">
-                <IconMail width={15} height={15} className="text-[var(--amber)]" /> {STUDIO.email}
+              <a href={`mailto:${c.email}`} className="flex items-center gap-2.5 text-[var(--muted)] transition-colors hover:text-[var(--amber)]">
+                <IconMail width={15} height={15} className="text-[var(--amber)]" /> {c.email}
               </a>
               <p className="pt-2 text-xs leading-relaxed text-[var(--dim)]">
                 The desk answers within the hour on shoot days. Urgent wedding-day calls go straight to Mara’s mobile.
