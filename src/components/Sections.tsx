@@ -30,23 +30,18 @@ const PROCESS = [
 
 /* ——————————————————— ABOUT / STUDIO ——————————————————— */
 export function About() {
-  const { sitePhotos } = useStore();
+  const { sitePhotos, content } = useStore();
+  const ab = content.about;
   return (
     <section id="studio" className="relative py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <div className="grid gap-14 lg:grid-cols-2 lg:gap-20">
           {/* sticky narrative */}
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <SectionHead num="01" label="The studio" title={<>A darkroom with a day job.</>} />
+            <SectionHead num="01" label="The studio" title={<>{ab.title}</>} />
             <Reveal delay={120}>
-              <p className="max-w-xl text-base leading-relaxed text-[var(--muted)] md:text-lg">
-                We started Imagine in 2011 with two strobes, a borrowed Rollei and a stubborn belief: that a photograph
-                should feel like the room did — the heat of the tungsten, the dust in the beam, the second before the laugh.
-              </p>
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--muted)] md:text-lg">
-                Fourteen years on, the Mercer Lane floor holds three seamless bays, a print press and a working darkroom.
-                The belief hasn’t changed. Neither has the coffee.
-              </p>
+              <p className="max-w-xl text-base leading-relaxed text-[var(--muted)] md:text-lg">{ab.p1}</p>
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--muted)] md:text-lg">{ab.p2}</p>
               <p className="mt-7 font-body text-sm italic text-[var(--ink)]">
                 — Mara Voss &amp; Jules Ferreira, founders
               </p>
@@ -80,7 +75,7 @@ export function About() {
 
             <Reveal delay={120}>
               <div className="mt-10 grid grid-cols-2 border border-[var(--line-soft)]">
-                {STATS.map((s, i) => (
+                {ab.stats.map((s, i) => (
                   <div
                     key={s.label}
                     className={`group p-6 transition-colors duration-300 hover:bg-[var(--panel)] ${i % 2 === 0 ? "border-r border-[var(--line-soft)]" : ""} ${i < 2 ? "border-b border-[var(--line-soft)]" : ""}`}

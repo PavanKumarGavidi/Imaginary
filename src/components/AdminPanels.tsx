@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { CATEGORIES } from "../data";
-import { DEFAULT_SITE_PHOTOS, useStore } from "../store";
-import type { GalleryFrame, Review, SitePhotoKey, TeamHue, TeamMember } from "../store";
+import type { Faq, Pkg, Service } from "../data";
+import { DEFAULT_SITE_CONTENT, DEFAULT_SITE_PHOTOS, useStore } from "../store";
+import type { AboutContent, ContactContent, GalleryFrame, HeroContent, Review, SitePhotoKey, TeamHue, TeamMember } from "../store";
 import { IconCheck, IconTrash, IconX } from "./Icons";
 import { SafeImg } from "./ui";
 
@@ -792,6 +793,560 @@ export function PhotosPanel() {
         TIP — team member portraits and gallery (work) frames have their own tabs with per-item photo upload. Changes here
         publish instantly to every visitor.
       </p>
+    </div>
+  );
+}
+
+/* ——————————————————— SITE CONTENT ——————————————————— */
+const CONTENT_SECTIONS = [
+  { id: "hero", label: "Opening" },
+  { id: "about", label: "Studio" },
+  { id: "services", label: "Services" },
+  { id: "packages", label: "Packages" },
+  { id: "faqs", label: "FAQ" },
+  { id: "contact", label: "Contact" },
+] as const;
+type CSec = (typeof CONTENT_SECTIONS)[number]["id"];
+
+const SECTION_TITLES: Record<CSec, string> = {
+  hero: "Opening headline",
+  about: "The studio story",
+  services: "Services list",
+  packages: "Packages & pricing",
+  faqs: "Questions & answers",
+  contact: "Contact & hours",
+};
+
+function SaveBar({ onSave, label = "Publish changes", onRestore }: { onSave: () => void; label?: string; onRestore?: () => void }) {
+  return (
+    <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-[var(--line-soft)] pt-4">
+      <button type="button" onClick={onSave} className="btn-solid !py-2.5">
+        <IconCheck width={15} height={15} /> {label}
+      </button>
+      {onRestore && (
+        <button onClick={onRestore} className="font-mono text-[9.5px] tracking-[0.2em] uppercase text-[var(--dim)] underline-offset-4 transition-colors hover:text-[var(--ember)] hover:underline">
+          Restore default
+        </button>
+      )}
+      <span className="font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)]">Goes live on the public site instantly</span>
+    </div>
+  );
+}
+
+function HeroForm() {
+  const { content, updateContent, toast } = useStore();
+  const [d, setD] = useState<HeroContent>({ ...content.hero });
+  return (
+    <div className="panel p-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Eyebrow line (above the headline)">
+          <input className="input" value={d.eyebrow} onChange={(e) => setD({ ...d, eyebrow: e.target.value })} />
+        </Field>
+        <Field label="Headline · line 1">
+          <input className="input" value={d.l1} onChange={(e) => setD({ ...d, l1: e.target.value })} />
+        </Field>
+        <Field label="Headline · line 2">
+          <input className="input" value={d.l2} onChange={(e) => setD({ ...d, l2: e.target.value })} />
+        </Field>
+        <Field label="Headline · line 3">
+          <input className="input" value={d.l3} onChange={(e) => setD({ ...d, l3: e.target.value })} />
+        </Field>
+        <Field label="Intro paragraph" className="md:col-span-2">
+          <textarea className="input resize-none" rows={3} value={d.blurb} onChange={(e) => setD({ ...d, blurb: e.target.value })} />
+        </Field>
+      </div>
+      <p className="mt-3 font-mono text-[9.5px] leading-relaxed tracking-[0.12em] text-[var(--dim)]">
+        Tip — wrap a word in asterisks to render it in italic amber: <span className="text-[var(--amber)]">with *light*</span>
+      </p>
+      <SaveBar
+        onSave={() => {
+          updateContent("hero", d);
+          toast("Opening copy published.");
+        }}
+        onRestore={() => {
+          setD({ ...DEFAULT_SITE_CONTENT.hero });
+          updateContent("hero", DEFAULT_SITE_CONTENT.hero);
+          toast("Opening copy restored to default.");
+        }}
+      />
+    </div>
+  );
+}
+
+function AboutForm() {
+  const { content, updateContent, toast } = useStore();
+  const [d, setD] = useState<AboutContent>({ ...content.about, stats: content.about.stats.map((s) => ({ ...s })), process: content.about.process.map((p) => ({ ...p })) });
+  return (
+    <div className="panel p-6">
+      <div className="grid gap-4">
+        <Field label="Section title">
+          <input className="input" value={d.title} onChange={(e) => setD({ ...d, title: e.target.value })} />
+        </Field>
+        <Field label="Paragraph one">
+          <textarea className="input resize-none" rows={3} value={d.p1} onChange={(e) => setD({ ...d, p1: e.target.value })} />
+        </Field>
+        <Field label="Paragraph two">
+          <textarea className="input resize-none" rows={2} value={d.p2} onChange={(e) => setD({ ...d, p2: e.target.value })} />
+        </Field>
+      </div>
+
+      <div className="mt-6">
+        <div className="label">Stats (animated counters)</div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {d.stats.map((s, i) => (
+            <div key={i} className="grid grid-cols-[72px_64px_1fr] gap-2">
+              <input className="input font-mono !text-xs" value={String(s.v)} onChange={(e) => setD({ ...d, stats: d.stats.map((x, j) => (j === i ? { ...x, v: Number(e.target.value) || 0 } : x)) })} aria-label="Stat value" />
+              <input className="input font-mono !text-xs" value={s.suffix} onChange={(e) => setD({ ...d, stats: d.stats.map((x, j) => (j === i ? { ...x, suffix: e.target.value } : x)) })} aria-label="Stat suffix" />
+              <input className="input" value={s.label} onChange={(e) => setD({ ...d, stats: d.stats.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} aria-label="Stat label" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="label !mb-0">Process steps</span>
+          <button type="button" onClick={() => setD({ ...d, process: [...d.process, { t: "New step", d: "Describe it here." }] })} className="font-mono text-[9.5px] tracking-[0.2em] uppercase text-[var(--amber)] hover:underline">
+            + Add step
+          </button>
+        </div>
+        <div className="grid gap-3">
+          {d.process.map((p, i) => (
+            <div key={i} className="grid gap-2 border border-[var(--line-soft)] p-3 sm:grid-cols-[180px_1fr_auto]">
+              <input className="input" value={p.t} onChange={(e) => setD({ ...d, process: d.process.map((x, j) => (j === i ? { ...x, t: e.target.value } : x)) })} aria-label="Step title" />
+              <input className="input" value={p.d} onChange={(e) => setD({ ...d, process: d.process.map((x, j) => (j === i ? { ...x, d: e.target.value } : x)) })} aria-label="Step description" />
+              <button type="button" onClick={() => setD({ ...d, process: d.process.filter((_, j) => j !== i) })} disabled={d.process.length <= 1} className="self-center text-[var(--dim)] transition-colors hover:text-[var(--ember)] disabled:opacity-30" aria-label="Remove step">
+                <IconTrash width={15} height={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <SaveBar
+        onSave={() => {
+          updateContent("about", d);
+          toast("Studio story published.");
+        }}
+        onRestore={() => {
+          setD({ ...DEFAULT_SITE_CONTENT.about, stats: DEFAULT_SITE_CONTENT.about.stats.map((s) => ({ ...s })), process: DEFAULT_SITE_CONTENT.about.process.map((p) => ({ ...p })) });
+          updateContent("about", DEFAULT_SITE_CONTENT.about);
+          toast("Studio story restored to default.");
+        }}
+      />
+    </div>
+  );
+}
+
+function ContactForm() {
+  const { content, updateContent, toast } = useStore();
+  const [d, setD] = useState<ContactContent>({ ...content.contact, hours: content.contact.hours.map((h) => [...h] as [string, string]) });
+  return (
+    <div className="panel p-6">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Street address">
+          <input className="input" value={d.address} onChange={(e) => setD({ ...d, address: e.target.value })} />
+        </Field>
+        <Field label="City / postcode line">
+          <input className="input" value={d.city} onChange={(e) => setD({ ...d, city: e.target.value })} />
+        </Field>
+        <Field label="Phone">
+          <input className="input" value={d.phone} onChange={(e) => setD({ ...d, phone: e.target.value })} />
+        </Field>
+        <Field label="Email">
+          <input className="input" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} />
+        </Field>
+      </div>
+      <div className="mt-6">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="label !mb-0">Opening hours</span>
+          <button type="button" onClick={() => setD({ ...d, hours: [...d.hours, ["New days", "—"]] })} className="font-mono text-[9.5px] tracking-[0.2em] uppercase text-[var(--amber)] hover:underline">
+            + Add row
+          </button>
+        </div>
+        <div className="grid gap-3">
+          {d.hours.map((h, i) => (
+            <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+              <input className="input" value={h[0]} onChange={(e) => setD({ ...d, hours: d.hours.map((x, j) => (j === i ? ([e.target.value, x[1]] as [string, string]) : x)) })} aria-label="Days" />
+              <input className="input" value={h[1]} onChange={(e) => setD({ ...d, hours: d.hours.map((x, j) => (j === i ? ([x[0], e.target.value] as [string, string]) : x)) })} aria-label="Hours" />
+              <button type="button" onClick={() => setD({ ...d, hours: d.hours.filter((_, j) => j !== i) })} disabled={d.hours.length <= 1} className="self-center text-[var(--dim)] transition-colors hover:text-[var(--ember)] disabled:opacity-30" aria-label="Remove row">
+                <IconTrash width={15} height={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+      <SaveBar
+        onSave={() => {
+          updateContent("contact", d);
+          toast("Contact details published.");
+        }}
+        onRestore={() => {
+          setD({ ...DEFAULT_SITE_CONTENT.contact, hours: DEFAULT_SITE_CONTENT.contact.hours.map((h) => [...h] as [string, string]) });
+          updateContent("contact", DEFAULT_SITE_CONTENT.contact);
+          toast("Contact details restored to default.");
+        }}
+      />
+    </div>
+  );
+}
+
+const ICON_OPTIONS: { id: Service["icon"]; label: string }[] = [
+  { id: "lens", label: "Lens" },
+  { id: "rings", label: "Rings" },
+  { id: "prism", label: "Prism" },
+  { id: "hanger", label: "Hanger" },
+  { id: "sprout", label: "Sprout" },
+  { id: "stage", label: "Stage light" },
+];
+const EMPTY_SERVICE: Service = { id: "", icon: "lens", title: "", desc: "", from: 100, duration: "1 hr", includes: [] };
+
+function ServicesManager() {
+  const { content, updateContent, toast } = useStore();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [f, setF] = useState<Service>(EMPTY_SERVICE);
+  const [includesText, setIncludesText] = useState("");
+
+  const close = () => {
+    setOpen(false);
+    setEditing(null);
+    setF(EMPTY_SERVICE);
+    setIncludesText("");
+  };
+
+  const save = () => {
+    if (!f.title.trim()) {
+      toast("Give the service a title.", "err");
+      return;
+    }
+    const includes = includesText.split("\n").map((s) => s.trim()).filter(Boolean);
+    const clean = { ...f, title: f.title.trim(), includes };
+    if (editing) {
+      updateContent("services", content.services.map((s) => (s.id === editing ? clean : s)));
+      toast("Service updated.");
+    } else {
+      updateContent("services", [...content.services, { ...clean, id: `svc-${Date.now().toString(36)}` }]);
+      toast("Service added — it's already bookable.");
+    }
+    close();
+  };
+
+  return (
+    <>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">{content.services.length} services · titles feed the booking form too</p>
+        <button onClick={() => (open ? close() : (setEditing(null), setF(EMPTY_SERVICE), setIncludesText(""), setOpen(true)))} className={open ? "btn-ghost !py-2.5" : "btn-solid !py-2.5"}>
+          {open ? "Close form" : "+ Add service"}
+        </button>
+      </div>
+
+      {open && (
+        <div className="panel pop-in mb-5 p-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Title">
+              <input className="input" value={f.title} placeholder="Portrait Sessions" onChange={(e) => setF({ ...f, title: e.target.value })} />
+            </Field>
+            <Field label="Icon">
+              <select className="input" value={f.icon} onChange={(e) => setF({ ...f, icon: e.target.value as Service["icon"] })}>
+                {ICON_OPTIONS.map((o) => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Starting price (USD)">
+              <input className="input font-mono !text-xs" type="number" min={0} value={String(f.from)} onChange={(e) => setF({ ...f, from: Number(e.target.value) || 0 })} />
+            </Field>
+            <Field label="Duration line">
+              <input className="input" value={f.duration} placeholder="1–2 hrs" onChange={(e) => setF({ ...f, duration: e.target.value })} />
+            </Field>
+            <Field label="Description" className="sm:col-span-2">
+              <textarea className="input resize-none" rows={2} value={f.desc} onChange={(e) => setF({ ...f, desc: e.target.value })} />
+            </Field>
+            <Field label="What's included (one per line)" className="sm:col-span-2">
+              <textarea className="input resize-none" rows={3} value={includesText} placeholder={"2 lighting setups\nWardrobe consult"} onChange={(e) => setIncludesText(e.target.value)} />
+            </Field>
+          </div>
+          <div className="mt-5 flex gap-3">
+            <button onClick={save} className="btn-solid !py-2.5"><IconCheck width={15} height={15} /> {editing ? "Save changes" : "Add service"}</button>
+            <button onClick={close} className="btn-ghost !py-2.5">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-3">
+        {content.services.map((s) => (
+          <Row key={s.id}>
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-xl text-[var(--ink)]">{s.title}</div>
+              <div className="mt-0.5 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--dim)]">
+                from ${s.from} · {s.duration} · {s.includes.length} included
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setEditing(s.id);
+                  setF(s);
+                  setIncludesText(s.includes.join("\n"));
+                  setOpen(true);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="border border-[var(--line)] px-2.5 py-1.5 font-mono text-[9.5px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)]"
+              >
+                Edit
+              </button>
+              <DeleteButton
+                onConfirm={() => {
+                  updateContent("services", content.services.filter((x) => x.id !== s.id));
+                  toast(`“${s.title}” removed.`, "err");
+                }}
+              />
+            </div>
+          </Row>
+        ))}
+      </div>
+    </>
+  );
+}
+
+const EMPTY_PKG: Pkg = { id: "", name: "", tagline: "", price: 100, hours: "1 hour", features: [] };
+
+function PackagesManager() {
+  const { content, updateContent, toast } = useStore();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [f, setF] = useState<Pkg>(EMPTY_PKG);
+  const [featuresText, setFeaturesText] = useState("");
+
+  const close = () => {
+    setOpen(false);
+    setEditing(null);
+    setF(EMPTY_PKG);
+    setFeaturesText("");
+  };
+
+  const save = () => {
+    if (!f.name.trim()) {
+      toast("Give the package a name.", "err");
+      return;
+    }
+    const features = featuresText.split("\n").map((s) => s.trim()).filter(Boolean);
+    const clean = { ...f, name: f.name.trim(), features };
+    const newId = editing ?? `pkg-${Date.now().toString(36)}`;
+    let next = editing ? content.packages.map((p) => (p.id === editing ? { ...clean, id: p.id } : p)) : [...content.packages, { ...clean, id: newId }];
+    if (clean.featured) next = next.map((p) => ({ ...p, featured: p.id === newId }));
+    updateContent("packages", next);
+    toast(editing ? "Package updated." : "Package added — it's bookable immediately.");
+    close();
+  };
+
+  return (
+    <>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">{content.packages.length} packages · prices drive the booking estimate</p>
+        <button onClick={() => (open ? close() : (setEditing(null), setF(EMPTY_PKG), setFeaturesText(""), setOpen(true)))} className={open ? "btn-ghost !py-2.5" : "btn-solid !py-2.5"}>
+          {open ? "Close form" : "+ Add package"}
+        </button>
+      </div>
+
+      {open && (
+        <div className="panel pop-in mb-5 p-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Name">
+              <input className="input" value={f.name} placeholder="The Contact Sheet" onChange={(e) => setF({ ...f, name: e.target.value })} />
+            </Field>
+            <Field label="Tagline">
+              <input className="input" value={f.tagline} placeholder="The session most clients book." onChange={(e) => setF({ ...f, tagline: e.target.value })} />
+            </Field>
+            <Field label="Price (USD)">
+              <input className="input font-mono !text-xs" type="number" min={0} value={String(f.price)} onChange={(e) => setF({ ...f, price: Number(e.target.value) || 0 })} />
+            </Field>
+            <Field label="Hours line">
+              <input className="input" value={f.hours} placeholder="3 hours · studio + location" onChange={(e) => setF({ ...f, hours: e.target.value })} />
+            </Field>
+            <Field label="Features (one per line)" className="sm:col-span-2">
+              <textarea className="input resize-none" rows={4} value={featuresText} placeholder={"Up to 3 outfits\n60 retouched frames"} onChange={(e) => setFeaturesText(e.target.value)} />
+            </Field>
+          </div>
+          <div className="mt-5 flex flex-wrap items-center gap-4">
+            <Toggle on={Boolean(f.featured)} onToggle={() => setF({ ...f, featured: !f.featured })} labelOn="Featured" labelOff="Standard" />
+            <button onClick={save} className="btn-solid !py-2.5"><IconCheck width={15} height={15} /> {editing ? "Save changes" : "Add package"}</button>
+            <button onClick={close} className="btn-ghost !py-2.5">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-3">
+        {content.packages.map((p) => (
+          <Row key={p.id}>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-display text-xl text-[var(--ink)]">{p.name}</span>
+                {p.featured && <span className="chip !border-[var(--amber)] !text-[var(--amber)]">Featured</span>}
+              </div>
+              <div className="mt-0.5 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--dim)]">
+                ${p.price} · {p.hours} · {p.features.length} features
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setEditing(p.id);
+                  setF(p);
+                  setFeaturesText(p.features.join("\n"));
+                  setOpen(true);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="border border-[var(--line)] px-2.5 py-1.5 font-mono text-[9.5px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)]"
+              >
+                Edit
+              </button>
+              <DeleteButton
+                onConfirm={() => {
+                  updateContent("packages", content.packages.filter((x) => x.id !== p.id));
+                  toast(`“${p.name}” removed.`, "err");
+                }}
+              />
+            </div>
+          </Row>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function FaqManager() {
+  const { content, updateContent, toast } = useStore();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [f, setF] = useState<Faq>({ q: "", a: "" });
+
+  const close = () => {
+    setOpen(false);
+    setEditing(null);
+    setF({ q: "", a: "" });
+  };
+
+  const save = () => {
+    if (!f.q.trim() || !f.a.trim()) {
+      toast("Both question and answer are required.", "err");
+      return;
+    }
+    const clean = { q: f.q.trim(), a: f.a.trim() };
+    if (editing) {
+      updateContent("faqs", content.faqs.map((x) => (x.id === editing ? { ...x, ...clean } : x)));
+      toast("Answer updated.");
+    } else {
+      updateContent("faqs", [...content.faqs, { ...clean, id: `faq-${Date.now().toString(36)}` }]);
+      toast("Question published.");
+    }
+    close();
+  };
+
+  return (
+    <>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">{content.faqs.length} questions on the wall</p>
+        <button onClick={() => (open ? close() : (setEditing(null), setF({ q: "", a: "" }), setOpen(true)))} className={open ? "btn-ghost !py-2.5" : "btn-solid !py-2.5"}>
+          {open ? "Close form" : "+ Add question"}
+        </button>
+      </div>
+
+      {open && (
+        <div className="panel pop-in mb-5 p-6">
+          <Field label="Question">
+            <input className="input" value={f.q} placeholder="How do deposits work?" onChange={(e) => setF({ ...f, q: e.target.value })} />
+          </Field>
+          <div className="mt-4">
+            <Field label="Answer">
+              <textarea className="input resize-none" rows={3} value={f.a} onChange={(e) => setF({ ...f, a: e.target.value })} />
+            </Field>
+          </div>
+          <div className="mt-5 flex gap-3">
+            <button onClick={save} className="btn-solid !py-2.5"><IconCheck width={15} height={15} /> {editing ? "Save changes" : "Publish"}</button>
+            <button onClick={close} className="btn-ghost !py-2.5">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-3">
+        {content.faqs.length === 0 && <p className="panel p-8 text-center text-sm text-[var(--muted)]">No questions yet — add the first one.</p>}
+        {content.faqs.map((q, qi) => (
+          <Row key={q.id ?? `faq-${qi}`}>
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-lg text-[var(--ink)]">{q.q}</div>
+              <div className="mt-0.5 line-clamp-1 text-xs text-[var(--muted)]">{q.a}</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setEditing(q.id ?? null);
+                  setF({ q: q.q, a: q.a });
+                  setOpen(true);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="border border-[var(--line)] px-2.5 py-1.5 font-mono text-[9.5px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)]"
+              >
+                Edit
+              </button>
+              <DeleteButton
+                onConfirm={() => {
+                  updateContent("faqs", content.faqs.filter((x) => x.id !== q.id));
+                  toast("Question removed.", "err");
+                }}
+              />
+            </div>
+          </Row>
+        ))}
+      </div>
+    </>
+  );
+}
+
+export function ContentPanel() {
+  const { updateContent, toast } = useStore();
+  const [sec, setSec] = useState<CSec>("hero");
+  return (
+    <div className="fade-in">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="font-display text-3xl text-[var(--ink)]">Website content</h2>
+          <p className="mt-1 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">
+            Editing <span className="text-[var(--amber)]">{SECTION_TITLES[sec]}</span> · publishes to every visitor instantly
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            (Object.keys(DEFAULT_SITE_CONTENT) as (keyof typeof DEFAULT_SITE_CONTENT)[]).forEach((k) => updateContent(k, DEFAULT_SITE_CONTENT[k]));
+            toast("All content restored to the shipped copy.");
+          }}
+          className="btn-ghost !py-2.5"
+        >
+          Restore everything
+        </button>
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-2">
+        {CONTENT_SECTIONS.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => setSec(s.id)}
+            className={`border px-4 py-2 font-mono text-[11px] tracking-[0.18em] uppercase transition-all duration-300 ${
+              sec === s.id ? "border-[var(--amber)] bg-[var(--amber)] text-white" : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--amber)] hover:text-[var(--ink)]"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {sec === "hero" && <HeroForm />}
+      {sec === "about" && <AboutForm />}
+      {sec === "services" && <ServicesManager />}
+      {sec === "packages" && <PackagesManager />}
+      {sec === "faqs" && <FaqManager />}
+      {sec === "contact" && <ContactForm />}
     </div>
   );
 }

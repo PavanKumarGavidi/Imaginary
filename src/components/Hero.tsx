@@ -4,7 +4,22 @@ import { useReducedMotion } from "../hooks";
 import { IconAperture, IconArrow, IconFlash } from "./Icons";
 import { Marquee, SafeImg, ScrambleText } from "./ui";
 
-const GENRES = ["Portrait", "Wedding", "Editorial", "Product", "Maternity", "Events", "Film scans"];
+/** Renders *word* segments as emphasized accents (admin marks emphasis with asterisks). */
+function Accent({ text, emClass = "italic" }: { text: string; emClass?: string }) {
+  return (
+    <>
+      {text.split(/(\*[^*]+\*)/g).map((part, i) =>
+        part.startsWith("*") && part.endsWith("*") ? (
+          <em key={i} className={emClass}>
+            {part.slice(1, -1)}
+          </em>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
 
 function RotatingBadge() {
   return (
@@ -24,7 +39,9 @@ function RotatingBadge() {
 
 export default function Hero() {
   const reduced = useReducedMotion();
-  const { sitePhotos } = useStore();
+  const { sitePhotos, content } = useStore();
+  const { hero } = content;
+  const genres = content.services.map((s) => s.title.replace(/ Sessions?$/, ""));
   const [flash, setFlash] = useState(true);
 
   useEffect(() => {
@@ -44,31 +61,27 @@ export default function Hero() {
             <div className="mb-7 flex items-center gap-3">
               <span className="pulse-dot h-2 w-2 rounded-full bg-[var(--amber)]" />
               <span className="kicker">
-                <ScrambleText text="Currently booking · Spring ’26" />
+                <ScrambleText text={hero.eyebrow} />
               </span>
             </div>
 
             <h1 className="font-display text-[clamp(3.9rem,10vw,8rem)] leading-[0.98]">
               <span className="mask-line">
-                <span style={{ animationDelay: "0.08s" }}>We write</span>
+                <span style={{ animationDelay: "0.08s" }}>{hero.l1}</span>
               </span>
               <span className="mask-line">
                 <span style={{ animationDelay: "0.2s" }}>
-                  with <em className="italic text-[var(--amber)]">light</em>
+                  <Accent text={hero.l2} emClass="italic text-[var(--amber)]" />
                 </span>
               </span>
               <span className="mask-line">
                 <span className="text-[var(--muted)]" style={{ animationDelay: "0.32s" }}>
-                  &amp; <em className="italic">shadow</em>
-                  <span className="text-[var(--ember)]">.</span>
+                  <Accent text={hero.l3} emClass="italic" />
                 </span>
               </span>
             </h1>
 
-            <p className="mt-8 max-w-xl text-base leading-relaxed text-[var(--muted)] md:text-lg">
-              Imagine is a full-service photography studio and working darkroom in Portland’s Pearl District — portraits,
-              weddings, editorial and product work, lit slowly and retouched by hand under one roof.
-            </p>
+            <p className="mt-8 max-w-xl text-base leading-relaxed text-[var(--muted)] md:text-lg">{hero.blurb}</p>
 
             <div className="mt-9 flex items-center gap-3 sm:gap-4">
               <a
@@ -134,7 +147,7 @@ export default function Hero() {
       {/* ——— genre marquee ——— */}
       <div className="mt-20 border-y border-[var(--line-soft)] bg-[rgba(233,244,251,0.85)] py-4">
         <Marquee>
-          {GENRES.map((g, i) => (
+          {genres.map((g, i) => (
             <span key={g} className="mx-5 flex items-center gap-10">
               <span className={`font-display text-xl tracking-[0.14em] uppercase ${i % 2 ? "text-[var(--amber)]" : "text-[var(--muted)]"}`}>
                 {g}

@@ -211,6 +211,7 @@ export const QUOTES: Quote[] = [
 
 /* ————— faq ————— */
 export interface Faq {
+  id?: string;
   q: string;
   a: string;
 }

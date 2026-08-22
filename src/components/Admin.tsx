@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { getPackage } from "../data";
+
 import { hasRecoveryInUrl } from "../lib/supabase";
 import { useStore } from "../store";
 import type { Booking, BookingStatus } from "../store";
@@ -23,7 +23,7 @@ import {
   IconX,
 } from "./Icons";
 import { SafeImg, ScrambleText } from "./ui";
-import { GalleryPanel, PhotosPanel, ReviewsPanel, TeamPanel } from "./AdminPanels";
+import { ContentPanel, GalleryPanel, PhotosPanel, ReviewsPanel, TeamPanel } from "./AdminPanels";
 
 const STATUS_META: Record<BookingStatus, { label: string; dot: string; pill: string }> = {
   pending: { label: "Pending", dot: "bg-[var(--amber)]", pill: "border-[var(--amber)]/50 bg-[rgba(13,127,194,0.1)] text-[var(--amber)]" },
@@ -45,6 +45,7 @@ const TABS = [
   { id: "team", label: "Team" },
   { id: "gallery", label: "Gallery" },
   { id: "photos", label: "Photos" },
+  { id: "content", label: "Content" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
@@ -441,14 +442,90 @@ export function LoginPage({ onBack, onSuccess }: { onBack: () => void; onSuccess
   );
 }
 
+/* ————————————————— CHANGE PASSWORD ————————————————— */
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const { changePassword, toast } = useStore();
+  const [cur, setCur] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [show, setShow] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    if (next.length < 8) {
+      setError("Use at least 8 characters.");
+      return;
+    }
+    if (next !== confirm) {
+      setError("The new passwords don't match.");
+      return;
+    }
+    setBusy(true);
+    const err = await changePassword(cur, next);
+    setBusy(false);
+    if (!err) {
+      toast("Password changed — use it next time you sign in.");
+      onClose();
+    } else {
+      setError(err);
+    }
+  };
+
+  return (
+    <div className="fade-in fixed inset-0 z-[90] flex items-center justify-center bg-[rgba(18,42,62,0.5)] px-5 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-label="Change password">
+      <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="pop-in panel w-full max-w-md p-7 shadow-[0_40px_90px_-40px_rgba(18,42,62,0.6)]">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="kicker">Security</div>
+            <h2 className="font-display mt-2 text-3xl text-[var(--ink)]">New key for the desk.</h2>
+          </div>
+          <button type="button" onClick={onClose} className="flex h-9 w-9 shrink-0 items-center justify-center border border-[var(--line)] text-[var(--muted)] transition-colors hover:border-[var(--ember)] hover:text-[var(--ember)]" aria-label="Close">
+            <IconX width={16} height={16} />
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-4">
+          <div>
+            <label className="label" htmlFor="pw-cur">Current password</label>
+            <input id="pw-cur" type={show ? "text" : "password"} className="input" autoComplete="current-password" value={cur} onChange={(e) => { setCur(e.target.value); setError(""); }} />
+          </div>
+          <div>
+            <label className="label" htmlFor="pw-next">New password</label>
+            <input id="pw-next" type={show ? "text" : "password"} className="input" autoComplete="new-password" placeholder="8+ characters" value={next} onChange={(e) => { setNext(e.target.value); setError(""); }} />
+          </div>
+          <div>
+            <label className="label" htmlFor="pw-confirm">Repeat new password</label>
+            <input id="pw-confirm" type={show ? "text" : "password"} className="input" autoComplete="new-password" value={confirm} onChange={(e) => { setConfirm(e.target.value); setError(""); }} />
+          </div>
+        </div>
+
+        <label className="mt-4 flex w-fit cursor-pointer items-center gap-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--muted)]">
+          <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} className="accent-[var(--amber)]" /> Show passwords
+        </label>
+
+        {error && <p className="mt-4 border-l-2 border-[var(--ember)] pl-3 text-xs text-[var(--ember)]">{error}</p>}
+
+        <button type="submit" className="btn-solid mt-6 w-full justify-center" disabled={busy}>
+          <IconKey width={16} height={16} /> {busy ? "Turning the key…" : "Change password"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 /* ————————————————— DASHBOARD ————————————————— */
 export function Dashboard({ onExit }: { onExit: () => void }) {
-  const { bookings, setBookingStatus, removeBooking, reviews, team, frames, logout, toast, cloud, syncError } = useStore();
+  const { bookings, setBookingStatus, removeBooking, reviews, team, frames, logout, toast, cloud, syncError, content } = useStore();
+  const pkgOf = (id: string) => content.packages.find((p) => p.id === id);
   const [tab, setTab] = useState<Tab>("bookings");
   const [filter, setFilter] = useState<"all" | BookingStatus>("all");
   const [query, setQuery] = useState("");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [exportDone, setExportDone] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
 
   const counts = useMemo(
     () => ({
@@ -465,7 +542,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
     () =>
       bookings
         .filter((b) => b.status === "confirmed" || b.status === "completed")
-        .reduce((sum, b) => sum + (getPackage(b.packageId)?.price ?? 0), 0),
+        .reduce((sum, b) => sum + (pkgOf(b.packageId)?.price ?? 0), 0),
     [bookings]
   );
 
@@ -495,7 +572,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
   const exportCsv = () => {
     const head = "Ref,Name,Email,Phone,Session,Package,Date,Time,Guests,Status,Notes,Created";
     const rows = visible.map((b) =>
-      [b.ref, b.name, b.email, b.phone, b.session, getPackage(b.packageId)?.name ?? b.packageId, b.date, b.time, b.guests, b.status, b.notes, b.createdAt]
+      [b.ref, b.name, b.email, b.phone, b.session, pkgOf(b.packageId)?.name ?? b.packageId, b.date, b.time, b.guests, b.status, b.notes, b.createdAt]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(",")
     );
@@ -517,10 +594,12 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
     team: team.length,
     gallery: frames.length,
     photos: 3,
+    content: 6,
   };
 
   return (
     <div className="min-h-screen pb-24">
+      {pwOpen && <ChangePasswordModal onClose={() => setPwOpen(false)} />}
       <header className="sticky top-0 z-[70] border-b border-[var(--line-soft)] bg-[rgba(255,255,255,0.92)] backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center gap-5 px-5 py-3.5 md:px-8">
           <div className="flex items-center gap-3">
@@ -540,6 +619,12 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
           </span>
           <button onClick={onExit} className="btn-ghost !px-4 !py-2 text-sm">
             <IconBack width={15} height={15} /> View site
+          </button>
+          <button
+            onClick={() => setPwOpen(true)}
+            className="hidden items-center gap-2 border border-[var(--line)] px-4 py-2 text-sm text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] sm:flex"
+          >
+            <IconKey width={14} height={14} /> Password
           </button>
           <button
             onClick={() => {
@@ -701,8 +786,8 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                               <div className="font-mono text-[10px] text-[var(--dim)]">{b.time} · {b.guests} guest{b.guests === 1 ? "" : "s"}</div>
                             </td>
                             <td className="px-4 py-4">
-                              <div className="text-[var(--ink)]">{getPackage(b.packageId)?.name ?? "—"}</div>
-                              <div className="font-mono text-[10px] text-[var(--dim)]">{usd(getPackage(b.packageId)?.price ?? 0)}</div>
+                              <div className="text-[var(--ink)]">{pkgOf(b.packageId)?.name ?? "—"}</div>
+                              <div className="font-mono text-[10px] text-[var(--dim)]">{usd(pkgOf(b.packageId)?.price ?? 0)}</div>
                             </td>
                             <td className="px-4 py-4">
                               <select
@@ -747,7 +832,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                         </div>
                         <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-[var(--muted)]">
                           <span>{b.session}</span>
-                          <span className="text-right">{getPackage(b.packageId)?.name}</span>
+                          <span className="text-right">{pkgOf(b.packageId)?.name}</span>
                           <span className="flex items-center gap-1.5"><IconCalendar width={13} height={13} className="text-[var(--dim)]" /> {fmtDate(b.date)} · {b.time}</span>
                           <span className="flex items-center justify-end gap-1.5"><IconUsers width={13} height={13} className="text-[var(--dim)]" /> {b.guests}</span>
                         </div>
@@ -783,6 +868,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
           {tab === "team" && <TeamPanel />}
           {tab === "gallery" && <GalleryPanel />}
           {tab === "photos" && <PhotosPanel />}
+          {tab === "content" && <ContentPanel />}
         </div>
       </main>
 
