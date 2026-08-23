@@ -117,41 +117,26 @@ On every booking the site can email **the studio inbox** (full request details) 
    (Gmail is easiest) → copy the **Service ID**.
 3. **Email Templates → Create Email Template** — make two:
 
-   **a) Studio alert** — in template settings set *To Email* to your admin inbox.
-   - Subject: `New booking {{booking_ref}} — {{session}}`
-   - Content:
-     ```
-     A new booking landed in the ledger.
+   **a) Studio alert** — in template settings set *To Email* to your admin inbox,
+   *From Name* to `Imagine Desk`, and *Reply To* to `{{reply_to}}` (so replying
+   answers the client directly). Toggle **HTML Content** ON, then paste:
 
-     Ref      {{booking_ref}}
-     Client   {{client_name}}
-     Contact  {{client_email}} · {{client_phone}}
-     Session  {{session}} ({{package}})
-     Date     {{date}} at {{time}} · {{guests}} guest(s)
-     Brief    {{notes}}
+   - Subject: `New booking {{booking_ref}} · {{session}}`
+   - Content: `supabase/email-templates/studio-alert.html`
 
-     Reply directly to the client from this email.
-     ```
-   - Save → copy the **Template ID**.
+   Save → copy the **Template ID**.
 
-   **b) Client confirmation** — set *To Email* to `{{client_email}}`.
-   - Subject: `Your Imagine booking {{booking_ref}} is in the darkroom`
-   - Content:
-     ```
-     Hi {{client_name}},
+   **b) Client confirmation** — set *To Email* to `{{client_email}}` and
+   *From Name* to `Imagine Studio`. Toggle **HTML Content** ON, then paste:
 
-     Your session request is on the desk:
+   - Subject: `Your Imagine session is in the darkroom — {{booking_ref}}`
+   - Content: `supabase/email-templates/client-confirmation.html`
 
-     {{session}} — {{package}}
-     {{date}} at {{time}} · {{guests}} guest(s)
-     Reference: {{booking_ref}}
+   Save → copy the **Template ID**.
 
-     We confirm every request personally within 24 hours, with a 30% deposit
-     link to lock the date. Until then, this slot is pencilled in for you.
-
-     — The Imagine studio
-     ```
-   - Save → copy the **Template ID**.
+   Available template variables (all sent by the site):
+   `booking_ref · client_name · client_email · client_phone · session ·
+   package · date · time · guests · notes · reply_to`
 
 4. **Account → API keys** → copy the **Public Key**.
 5. Add the four values to your host's environment variables (Netlify: *Site
