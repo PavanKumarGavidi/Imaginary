@@ -93,6 +93,8 @@ export interface ContactContent {
   city: string;
   phone: string;
   email: string;
+  /** Optional WhatsApp number (any format — digits are extracted). Powers the mobile quick-dock. */
+  whatsapp?: string;
   hours: [string, string][];
 }
 export interface SiteContent {
@@ -512,7 +514,82 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 5200);
         if (fresh) notifyBrowser(b);
       })
+      /* ————— live content sync — any change in the desk (or another tab)
+         re-syncs reviews, team, gallery, photos, content, deliveries, posts ————— */
+      .on("postgres_changes", { event: "*", schema: "public", table: "reviews" }, () => debounceRefresh("reviews"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, () => debounceRefresh("team_members"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "gallery_frames" }, () => debounceRefresh("gallery_frames"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_photos" }, () => debounceRefresh("site_photos"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_content" }, () => debounceRefresh("site_content"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "deliveries" }, () => debounceRefresh("deliveries"))
+      .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => debounceRefresh("posts"))
       .subscribe();
+
+    const timers: Record<string, number> = {};
+    const debounceRefresh = (table: string) => {
+      window.clearTimeout(timers[table]);
+      timers[table] = window.setTimeout(() => void refreshTable(table), 250);
+    };
+
+    const refreshTable = async (table: string) => {
+      if (!alive) return;
+      const { data } = await supabase!.from(table).select("*");
+      if (!alive || !Array.isArray(data)) return;
+      const rows = data as Record<string, unknown>[];
+      switch (table) {
+        case "reviews":
+          setReviews(
+            rows.map((r) => ({ id: String(r.id), quote: String(r.quote ?? ""), name: String(r.name ?? ""), meta: String(r.meta ?? ""), published: Boolean(r.published ?? true) }))
+          );
+          break;
+        case "team_members":
+          setTeam(
+            rows.map((r) => ({
+              id: String(r.id), name: String(r.name ?? ""), role: String(r.role ?? ""), bio: String(r.bio ?? ""),
+              gear: String(r.gear ?? ""), hue: (r.hue as TeamHue) ?? "sky", photo: String(r.photo ?? ""), published: Boolean(r.published ?? true),
+            }))
+          );
+          break;
+        case "gallery_frames":
+          setFrames(
+            rows.map((r) => ({
+              id: String(r.id), title: String(r.title ?? ""), cat: (r.cat as Category) ?? "Portrait",
+              img: String(r.img ?? ""), exif: String(r.exif ?? ""), published: Boolean(r.published ?? true),
+            }))
+          );
+          break;
+        case "site_photos": {
+          const merged = { ...DEFAULT_SITE_PHOTOS };
+          for (const r of rows) {
+            const k = String(r.slot_key);
+            if (k === "hero" || k === "studio" || k === "login") merged[k] = String(r.img ?? "");
+          }
+          setSitePhotos(merged);
+          break;
+        }
+        case "site_content": {
+          const next: Record<string, unknown> = { ...DEFAULT_SITE_CONTENT };
+          for (const r of rows) {
+            const k = String(r.key);
+            if (k in next) next[k] = r.value;
+          }
+          setContentState(next as unknown as SiteContent);
+          break;
+        }
+        case "deliveries":
+          setDeliveries(rows.map(rowToDelivery));
+          break;
+        case "posts":
+          setPosts(
+            rows.map((p) => ({
+              id: String(p.id), slug: String(p.slug ?? ""), title: String(p.title ?? ""), excerpt: String(p.excerpt ?? ""),
+              cover: String(p.cover ?? ""), body: String(p.body ?? ""), tag: String(p.tag ?? "Studio"),
+              published: Boolean(p.published ?? true), createdAt: String(p.created_at ?? new Date().toISOString()),
+            }))
+          );
+          break;
+      }
+    };
 
     return () => {
       alive = false;

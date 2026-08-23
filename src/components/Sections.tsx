@@ -87,6 +87,28 @@ export function About() {
                 </Reveal>
               ))}
             </div>
+
+            {/* getting here */}
+            <Reveal delay={200}>
+              <div className="panel mt-10 overflow-hidden">
+                <div className="flex items-center justify-between border-b border-[var(--line-soft)] px-5 py-3">
+                  <span className="font-mono text-[10px] tracking-[0.24em] uppercase text-[var(--dim)]">Getting here</span>
+                  <span className="font-mono text-[10px] tracking-[0.18em] text-[var(--amber)]">45.5289°N · 122.6819°W</span>
+                </div>
+                <iframe
+                  title="Map to the Imagine studio"
+                  src="https://www.openstreetmap.org/export/embed.html?bbox=-122.6940%2C45.5220%2C-122.6700%2C45.5360&layer=mapnik&marker=45.5289%2C-122.6819"
+                  className="h-48 w-full border-0"
+                  style={{ filter: "grayscale(0.3) saturate(0.8)" }}
+                  loading="lazy"
+                />
+                <div className="grid gap-x-4 gap-y-2 border-t border-[var(--line-soft)] px-5 py-4 text-xs leading-relaxed text-[var(--muted)] sm:grid-cols-3">
+                  <p><span className="font-mono text-[9.5px] tracking-[0.18em] uppercase text-[var(--amber)]">Streetcar</span><br />NS Line to NW 10th — 4 min walk</p>
+                  <p><span className="font-mono text-[9.5px] tracking-[0.18em] uppercase text-[var(--amber)]">Parking</span><br />SmartPark garage, NW 10th &amp; Glisan</p>
+                  <p><span className="font-mono text-[9.5px] tracking-[0.18em] uppercase text-[var(--amber)]">Bikes</span><br />Racks right out front, pump inside</p>
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
       </div>

@@ -1,7 +1,116 @@
 import { useState } from "react";
+import type { FormEvent } from "react";
 import { useStore } from "../store";
 import { Marquee, Reveal, SectionHead } from "./ui";
 import { IconArrow, IconCheck, IconChevron, IconStar } from "./Icons";
+
+/* ————— guestbook — clients leave a word; the desk approves it ————— */
+function Guestbook() {
+  const { addReview, toast, content } = useStore();
+  const [quote, setQuote] = useState("");
+  const [name, setName] = useState("");
+  const [meta, setMeta] = useState("");
+  const [err, setErr] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!quote.trim() || !name.trim()) {
+      setErr("A few words and your name — that's all we need.");
+      return;
+    }
+    addReview({ quote: quote.trim(), name: name.trim(), meta: meta.trim() || "Studio client", published: false });
+    toast("Thank you — your words will hang on the wall after a quick read.");
+    setSent(true);
+  };
+
+  if (sent) {
+    return (
+      <Reveal>
+        <div className="panel pop-in mx-auto mt-14 max-w-xl border-l-2 !border-l-[var(--sage)] p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.08)] text-[var(--sage)]">
+            <IconCheck width={20} height={20} />
+          </div>
+          <p className="font-display mt-4 text-2xl text-[var(--ink)]">In the darkroom, developing.</p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+            The desk reads every word personally. Yours goes up on the wall once it's approved — usually within the day.
+          </p>
+        </div>
+      </Reveal>
+    );
+  }
+
+  return (
+    <Reveal delay={120}>
+      <div className="mx-auto mt-14 max-w-4xl border border-[var(--line)] bg-[var(--panel)] shadow-[0_30px_70px_-45px_rgba(18,42,62,0.5)]">
+        <div className="grid md:grid-cols-[0.9fr_1.1fr]">
+          <div className="border-b border-[var(--line-soft)] bg-[#10293e] p-8 text-[#f2f9fe] md:border-b-0 md:border-r">
+            <div className="font-mono text-[9.5px] tracking-[0.3em] uppercase text-[#7ab8e6]">The guestbook</div>
+            <h3 className="font-display mt-3 text-3xl leading-tight">
+              Had a sitting?<br />
+              <em className="italic text-[#8fd0f7]">Leave a word.</em>
+            </h3>
+            <p className="mt-4 text-sm leading-relaxed text-[rgba(242,249,254,0.7)]">
+              Every note is read at the desk before it hangs. It's how the wall stays honest — and how the next sitter
+              knows what the light feels like.
+            </p>
+            <div className="mt-6 flex gap-1 text-[#8fd0f7]">
+              {Array.from({ length: 5 }).map((_, s) => (
+                <IconStar key={s} />
+              ))}
+            </div>
+          </div>
+          <form onSubmit={submit} className="p-8">
+            <div className="grid gap-4">
+              <div>
+                <label className="label" htmlFor="gb-quote">Your words</label>
+                <textarea
+                  id="gb-quote"
+                  className={`input resize-none ${err && !quote.trim() ? "err" : ""}`}
+                  rows={3}
+                  value={quote}
+                  onChange={(e) => {
+                    setQuote(e.target.value);
+                    setErr("");
+                  }}
+                  placeholder="They waited out the rain, then gave us golden hour anyway…"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="label" htmlFor="gb-name">Name</label>
+                  <input
+                    id="gb-name"
+                    className={`input ${err && !name.trim() ? "err" : ""}`}
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setErr("");
+                    }}
+                    placeholder="Maya L."
+                  />
+                </div>
+                <div>
+                  <label className="label" htmlFor="gb-meta">Session</label>
+                  <select id="gb-meta" className="input" value={meta} onChange={(e) => setMeta(e.target.value)}>
+                    <option value="">Studio client</option>
+                    {content.services.map((s) => (
+                      <option key={s.id} value={s.title}>{s.title}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {err && <p className="text-xs text-[var(--ember)]">{err}</p>}
+              <button type="submit" className="btn-solid w-full justify-center">
+                Pin it to the wall <IconArrow width={15} height={15} />
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
 
 /* ——————————————————— PACKAGES ——————————————————— */
 export function Pricing({ onChoose }: { onChoose: (packageId: string) => void }) {
@@ -120,6 +229,9 @@ export function Testimonials() {
         </Marquee>
       </Reveal>
       )}
+      <div className="mx-auto max-w-7xl px-5 md:px-8">
+        <Guestbook />
+      </div>
     </section>
   );
 }

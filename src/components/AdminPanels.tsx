@@ -953,6 +953,9 @@ function ContactForm() {
         <Field label="Email">
           <input className="input" value={d.email} onChange={(e) => setD({ ...d, email: e.target.value })} />
         </Field>
+        <Field label="WhatsApp number (optional — powers the mobile quick-dock)" className="sm:col-span-2">
+          <input className="input" value={d.whatsapp ?? ""} placeholder="+1 503 555 0114" onChange={(e) => setD({ ...d, whatsapp: e.target.value })} />
+        </Field>
       </div>
       <div className="mt-6">
         <div className="mb-2 flex items-center justify-between">

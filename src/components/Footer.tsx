@@ -1,5 +1,5 @@
 import { useStore } from "../store";
-import { IconAperture, IconInstagram, IconKey, IconMail, IconPhone, IconPin } from "./Icons";
+import { IconAperture, IconInstagram, IconKey, IconMail, IconPhone, IconPin, IconWhatsApp } from "./Icons";
 
 export default function Footer({ onAdmin }: { onAdmin: () => void }) {
   const { content } = useStore();
@@ -38,6 +38,17 @@ export default function Footer({ onAdmin }: { onAdmin: () => void }) {
                   <s.icon width={16} height={16} />
                 </a>
               ))}
+              {c.whatsapp?.replace(/[^0-9]/g, "") && (
+                <a
+                  href={`https://wa.me/${c.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent("Hi Imagine — I'd like to ask about a session.")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="WhatsApp"
+                  className="flex h-10 w-10 items-center justify-center border border-[var(--line)] text-[var(--muted)] transition-all hover:-translate-y-1 hover:border-[#1f9d55] hover:text-[#1f9d55]"
+                >
+                  <IconWhatsApp width={16} height={16} />
+                </a>
+              )}
             </div>
           </div>
 

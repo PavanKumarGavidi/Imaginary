@@ -12,6 +12,7 @@ import Footer from "./components/Footer";
 import { Dashboard, LoginPage } from "./components/Admin";
 import { JournalListPage, JournalPostPage } from "./components/Journal";
 import DeliveryPage from "./components/Delivery";
+import QuickDock from "./components/QuickDock";
 import { IconAperture } from "./components/Icons";
 import { Toasts } from "./components/ui";
 
@@ -163,6 +164,7 @@ function Shell() {
             <BookingSection />
           </main>
           <Footer onAdmin={goAdmin} />
+          <QuickDock />
         </>
       )}
 
