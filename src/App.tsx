@@ -15,12 +15,12 @@ import { Toasts } from "./components/ui";
 
 type View = "site" | "login" | "admin";
 
-/** Map the URL hash to a view so a refresh lands you back where you were. */
+/** Read the current view back out of the URL hash (survives refresh). */
 const viewFromHash = (): View => {
   if (typeof window === "undefined") return "site";
   const h = window.location.hash;
   if (h.startsWith("#/desk")) return "admin";
-  if (h.startsWith("#/staff")) return "login";
+  if (h.startsWith("#/staff") || h.startsWith("#/login")) return "login";
   return "site";
 };
 
@@ -41,7 +41,15 @@ function BootScreen() {
 
 function Shell() {
   const { isAdmin, setPrefill, ready, recovery } = useStore();
-  const [view, setView] = useState<View>("site");
+  /* start from the URL hash so a refresh (or bookmark) restores the exact view */
+  const [view, setView] = useState<View>(() => viewFromHash());
+
+  /* browser back/forward between site ↔ desk follows the hash too */
+  useEffect(() => {
+    const onHash = () => setView(viewFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
