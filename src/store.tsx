@@ -448,7 +448,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
       sub.subscription.unsubscribe();
-      void supabase.removeChannel(chan);
+      void supabase?.removeChannel(chan);
     };
   }, []);
 
@@ -787,11 +787,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       requestReset,
       setNewPassword,
       changePassword,
+      unseenCount,
+      markSeen,
+      requestNotifyPermission,
       logout,
       toast,
       setPrefill,
     }),
-    [bookings, reviews, team, frames, isAdmin, ready, syncError, sitePhotos, content, recovery, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, setSitePhoto, updateContent, login, requestReset, setNewPassword, changePassword, logout, toast]
+    [bookings, reviews, team, frames, isAdmin, ready, syncError, sitePhotos, content, recovery, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, setSitePhoto, updateContent, login, requestReset, setNewPassword, changePassword, unseenCount, markSeen, requestNotifyPermission, logout, toast]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

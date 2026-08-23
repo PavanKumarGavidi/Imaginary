@@ -228,6 +228,13 @@ export const IconFilm = (p: P) => (
   </S>
 );
 
+export const IconBell = (p: P) => (
+  <S {...p}>
+    <path d="M12 3a6 6 0 0 0-6 6v3.5L4 16h16l-2-3.5V9a6 6 0 0 0-6-6z" />
+    <path d="M9.5 19a2.5 2.5 0 0 0 5 0" />
+  </S>
+);
+
 export const IconLogout = (p: P) => (
   <S {...p}>
     <path d="M14 4H5.5v16H14M10 12h10.5M17 8.5l3.5 3.5-3.5 3.5" />

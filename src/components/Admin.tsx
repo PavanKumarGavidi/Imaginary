@@ -7,6 +7,7 @@ import type { Booking, BookingStatus } from "../store";
 import {
   IconAperture,
   IconBack,
+  IconBell,
   IconCalendar,
   IconCheck,
   IconDownload,
@@ -523,14 +524,22 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 
 /* ————————————————— DASHBOARD ————————————————— */
 export function Dashboard({ onExit }: { onExit: () => void }) {
-  const { bookings, setBookingStatus, removeBooking, reviews, team, frames, logout, toast, cloud, syncError, content } = useStore();
+  const { bookings, setBookingStatus, removeBooking, reviews, team, frames, logout, toast, cloud, syncError, content, unseenCount, markSeen, requestNotifyPermission } = useStore();
   const pkgOf = (id: string) => content.packages.find((p) => p.id === id);
   const [tab, setTab] = useState<Tab>("bookings");
+
+  /* viewing the ledger counts as "seen" */
+  useEffect(() => {
+    if (tab === "bookings") markSeen();
+  }, [tab, markSeen]);
   const [filter, setFilter] = useState<"all" | BookingStatus>("all");
   const [query, setQuery] = useState("");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [exportDone, setExportDone] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
+  const [notifyPerm, setNotifyPerm] = useState<string>(() =>
+    typeof Notification === "undefined" ? "unsupported" : Notification.permission
+  );
 
   const counts = useMemo(
     () => ({
@@ -625,6 +634,30 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
           <button onClick={onExit} className="btn-ghost !px-4 !py-2 text-sm">
             <IconBack width={15} height={15} /> View site
           </button>
+          {cloud && notifyPerm !== "unsupported" && (
+            notifyPerm === "granted" ? (
+              <span className="hidden items-center gap-2 border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.08)] px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--sage)] sm:flex" title="Browser alerts for new bookings are on">
+                <IconBell width={13} height={13} /> Alerts on
+              </span>
+            ) : (
+              <button
+                onClick={() => {
+                  requestNotifyPermission();
+                  window.setTimeout(() => {
+                    if (typeof Notification !== "undefined") {
+                      setNotifyPerm(Notification.permission);
+                      if (Notification.permission === "granted") toast("Desktop alerts on — we'll ping you on new bookings.");
+                      if (Notification.permission === "denied") toast("Alerts blocked by the browser — the desk badge still works.");
+                    }
+                  }, 600);
+                }}
+                className="hidden items-center gap-2 border border-[var(--line)] px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] sm:flex"
+                title="Get a browser notification when a new booking lands"
+              >
+                <IconBell width={13} height={13} /> Enable alerts
+              </button>
+            )
+          )}
           <button
             onClick={() => setPwOpen(true)}
             className="hidden items-center gap-2 border border-[var(--line)] px-4 py-2 text-sm text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] sm:flex"
@@ -683,6 +716,11 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                 <span className={`border px-1.5 py-0.5 text-[9px] ${active ? "border-[var(--amber)]/60 bg-[rgba(13,127,194,0.08)]" : "border-[var(--line)]"}`}>
                   {tabCount[t.id]}
                 </span>
+                {t.id === "bookings" && unseenCount > 0 && !active && (
+                  <span className="pulse-dot absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--ember)] px-1 font-mono text-[9px] font-bold text-white">
+                    {unseenCount > 9 ? "9+" : unseenCount}
+                  </span>
+                )}
                 {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-[var(--amber)]" />}
               </button>
             );
