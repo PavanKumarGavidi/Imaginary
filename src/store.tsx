@@ -173,6 +173,11 @@ interface Store {
   updateContent: <K extends ContentKey>(key: K, value: SiteContent[K]) => void;
   /** Change the signed-in admin's password. Returns an error message, or null on success. */
   changePassword: (current: string, next: string) => Promise<string | null>;
+  /** Pending bookings that landed since the admin last viewed the ledger. */
+  unseenCount: number;
+  markSeen: () => void;
+  /** Ask the browser for OS-notification permission (used for new-booking alerts). */
+  requestNotifyPermission: () => void;
   addBooking: (b: Omit<Booking, "id" | "ref" | "status" | "createdAt">) => Booking;
   setBookingStatus: (id: string, s: BookingStatus) => void;
   removeBooking: (id: string) => void;
@@ -283,6 +288,55 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const toastId = useRef(0);
+
+  /* "seen ledger" watermark — bookings newer than this count as unseen */
+  const [lastSeen, setLastSeen] = useState<number>(() => {
+    try {
+      const v = Number(localStorage.getItem("imagine_seen_v1"));
+      if (v > 0) return v;
+    } catch {
+      /* private mode etc. */
+    }
+    return Date.now();
+  });
+
+  const markSeen = useCallback(() => {
+    const now = Date.now();
+    setLastSeen(now);
+    try {
+      localStorage.setItem("imagine_seen_v1", String(now));
+    } catch {
+      /* non-fatal */
+    }
+  }, []);
+
+  const requestNotifyPermission = useCallback(() => {
+    try {
+      if (typeof Notification !== "undefined" && Notification.permission === "default") {
+        void Notification.requestPermission();
+      }
+    } catch {
+      /* unsupported browser */
+    }
+  }, []);
+
+  const notifyBrowser = useCallback((b: Booking) => {
+    try {
+      if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+      if (document.hasFocus()) return; // desk is frontmost — the toast is enough
+      new Notification(`New booking ${b.ref}`, {
+        body: `${b.name} — ${b.session} · ${b.date} at ${b.time}`,
+        tag: b.id,
+      });
+    } catch {
+      /* unsupported browser */
+    }
+  }, []);
+
+  const unseenCount = useMemo(
+    () => bookings.filter((b) => b.status === "pending" && new Date(b.createdAt).getTime() > lastSeen).length,
+    [bookings, lastSeen]
+  );
   const warnedQuota = useRef(false);
 
   const toast = useCallback((msg: string, tone: "ok" | "err" = "ok") => {
@@ -357,9 +411,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (evt === "PASSWORD_RECOVERY") setRecovery(true);
       if (evt === "SIGNED_OUT") setRecovery(false);
     });
+
+    /* ————— live booking alerts (Supabase Realtime → every open desk) ————— */
+    const chan = supabase
+      .channel("bookings-live")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "bookings" }, (payload) => {
+        const row = payload.new as Record<string, unknown>;
+        const b: Booking = {
+          id: String(row.id),
+          ref: String(row.ref ?? ""),
+          name: String(row.name ?? ""),
+          email: String(row.email ?? ""),
+          phone: String(row.phone ?? ""),
+          session: String(row.session ?? ""),
+          packageId: String(row.package_id ?? ""),
+          date: String(row.date ?? ""),
+          time: String(row.time ?? ""),
+          guests: Number(row.guests ?? 1),
+          notes: String(row.notes ?? ""),
+          status: (row.status as BookingStatus) ?? "pending",
+          createdAt: String(row.created_at ?? new Date().toISOString()),
+        };
+        let fresh = false;
+        setBookings((prev) => {
+          if (prev.some((x) => x.id === b.id)) return prev;
+          fresh = true;
+          return [b, ...prev];
+        });
+        const id = ++toastId.current;
+        setToasts((t) => [...t, { id, msg: `New booking ${b.ref} — ${b.name}`, tone: "ok" }]);
+        window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 5200);
+        if (fresh) notifyBrowser(b);
+      })
+      .subscribe();
+
     return () => {
       alive = false;
       sub.subscription.unsubscribe();
+      void supabase.removeChannel(chan);
     };
   }, []);
 
