@@ -4,6 +4,9 @@ import { CATEGORIES } from "../data";
 import type { Faq, Pkg, Service } from "../data";
 import { DEFAULT_SITE_CONTENT, DEFAULT_SITE_PHOTOS, useStore } from "../store";
 import type { AboutContent, ContactContent, GalleryFrame, HeroContent, Review, SitePhotoKey, TeamHue, TeamMember } from "../store";
+import { storeImage } from "../lib/images";
+import type { PhotoFolder } from "../lib/images";
+import { isSupabaseConfigured as supabaseConfigured } from "../lib/supabase";
 import { IconCheck, IconTrash, IconX } from "./Icons";
 import { SafeImg } from "./ui";
 
@@ -180,47 +183,38 @@ export function UploadField({
   onFile,
   onClear,
   label = "Upload an image",
+  folder = "photos",
 }: {
   value: string;
-  onFile: (dataUrl: string) => void;
+  onFile: (url: string) => void;
   onClear: () => void;
   label?: string;
+  folder?: PhotoFolder;
 }) {
+  const { toast } = useStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const warnedLocal = useRef(false);
 
   const readFile = (file: File | null | undefined) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setErr("That file isn't an image.");
-      return;
-    }
-    if (file.size > 6 * 1024 * 1024) {
-      setErr("Keep it under 6 MB — it will be compressed automatically.");
-      return;
-    }
     setErr("");
     setBusy(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const raw = String(reader.result);
-      shrink(raw)
-        .then((url) => {
-          onFile(url);
-          setBusy(false);
-        })
-        .catch(() => {
-          onFile(raw);
-          setBusy(false);
-        });
-    };
-    reader.onerror = () => {
-      setErr("Couldn't read that file — try another.");
-      setBusy(false);
-    };
-    reader.readAsDataURL(file);
+    storeImage(file, folder)
+      .then(({ url, source }) => {
+        if (source === "local" && supabaseConfigured && !warnedLocal.current) {
+          warnedLocal.current = true;
+          toast("Saved in-browser — run the Storage SQL once so uploads live in Supabase.", "err");
+        }
+        onFile(url);
+        setBusy(false);
+      })
+      .catch((e: Error) => {
+        setErr(e.message || "Couldn't process that file — try another.");
+        setBusy(false);
+      });
   };
 
   return (
@@ -267,7 +261,7 @@ export function UploadField({
           <>
             <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--muted)]">⇪ {label}</span>
             <span className="mt-1 block font-mono text-[9px] tracking-[0.1em] text-[var(--dim)]">
-              click or drag &amp; drop · auto-compressed · max 6 MB
+              click or drag &amp; drop · compressed · {supabaseConfigured ? "saved to Supabase Storage" : "saved in-browser"} · max 6 MB
             </span>
           </>
         )}
@@ -494,6 +488,7 @@ export function TeamPanel() {
               <UploadField
                 value={form.photo}
                 label="Upload a portrait"
+                folder="team"
                 onFile={(url) => setForm({ ...form, photo: url })}
                 onClear={() => setForm({ ...form, photo: "" })}
               />
@@ -638,6 +633,7 @@ export function GalleryPanel() {
               <UploadField
                 value={form.img}
                 label="Upload a frame"
+                folder="gallery"
                 onFile={(url) => setForm({ ...form, img: url })}
                 onClear={() => setForm({ ...form, img: "" })}
               />

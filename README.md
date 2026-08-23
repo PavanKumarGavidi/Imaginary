@@ -92,3 +92,92 @@ Works on any static host (Netlify, Vercel, Cloudflare Pages, GitHub Pages, S3…
 - Uploads are downscaled to ≤1100px JPEG (~q85) client-side before storing.
 - All animations honor `prefers-reduced-motion`.
 - Public visitors can only insert bookings and read published content (enforced by RLS).
+
+---
+
+## Tier 1 — Storage, booking emails, slot availability
+
+### 📸 Image uploads → Supabase Storage
+
+Run the **"TIER 1"** section of `supabase/schema.sql` (creates the public `photos`
+bucket + policies). From then on, every upload in the desk (team portraits, gallery
+frames, site photos) is stored in the bucket and referenced by a public URL like
+`https://YOUR-PROJECT.supabase.co/storage/v1/object/public/photos/team/….jpg`.
+
+Before the bucket exists (or in demo mode), uploads fall back to embedded data URLs,
+so nothing ever breaks.
+
+### ✉️ Booking email notifications (EmailJS — free)
+
+On every booking the site can email **the studio inbox** (full request details) and
+**the client** (friendly confirmation with their `IM-XXXX` reference).
+
+1. Create a free account at **emailjs.com** (200 emails/month — plenty for a studio).
+2. **Email Services → Add New Service** → connect the inbox you want to send from
+   (Gmail is easiest) → copy the **Service ID**.
+3. **Email Templates → Create Email Template** — make two:
+
+   **a) Studio alert** — in template settings set *To Email* to your admin inbox.
+   - Subject: `New booking {{booking_ref}} — {{session}}`
+   - Content:
+     ```
+     A new booking landed in the ledger.
+
+     Ref      {{booking_ref}}
+     Client   {{client_name}}
+     Contact  {{client_email}} · {{client_phone}}
+     Session  {{session}} ({{package}})
+     Date     {{date}} at {{time}} · {{guests}} guest(s)
+     Brief    {{notes}}
+
+     Reply directly to the client from this email.
+     ```
+   - Save → copy the **Template ID**.
+
+   **b) Client confirmation** — set *To Email* to `{{client_email}}`.
+   - Subject: `Your Imagine booking {{booking_ref}} is in the darkroom`
+   - Content:
+     ```
+     Hi {{client_name}},
+
+     Your session request is on the desk:
+
+     {{session}} — {{package}}
+     {{date}} at {{time}} · {{guests}} guest(s)
+     Reference: {{booking_ref}}
+
+     We confirm every request personally within 24 hours, with a 30% deposit
+     link to lock the date. Until then, this slot is pencilled in for you.
+
+     — The Imagine studio
+     ```
+   - Save → copy the **Template ID**.
+
+4. **Account → API keys** → copy the **Public Key**.
+5. Add the four values to your host's environment variables (Netlify: *Site
+   settings → Environment variables*) and/or `.env.local`, then redeploy:
+
+   ```
+   VITE_EMAILJS_SERVICE_ID=service_xxx
+   VITE_EMAILJS_PUBLIC_KEY=xxx
+   VITE_EMAILJS_STUDIO_TEMPLATE_ID=template_xxx
+   VITE_EMAILJS_CLIENT_TEMPLATE_ID=template_xxx
+   ```
+
+Email failures never block a booking — the ledger always wins. The optional
+server-side path (Resend via Edge Function) is ready in
+`supabase/functions/booking-email/` — deploy it with the Supabase CLI when you
+want emails sent from your own domain (see the file header for the 5 steps).
+
+### 🗓️ Slot availability
+
+Also in the Tier 1 SQL: the `taken_slots(date)` function. The public booking form
+calls it when a date is chosen and:
+
+- marks already-booked call-times as **"— booked"** (disabled),
+- shows a live readout — *"4 of 7 call-times free on Sat, Mar 14"* (green → amber → red),
+- auto-clears a slot if someone else books it while the form is open,
+- re-checks at submit time, so two people can never grab the same slot.
+
+The function returns only times for a date (never names/emails), so it's safe to
+expose to anonymous visitors.

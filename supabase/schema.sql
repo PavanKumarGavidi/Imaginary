@@ -148,3 +148,51 @@ insert into public.site_photos (slot_key, img) values
   ('studio', 'https://image.qwenlm.ai/generated-images/dd7371bb-a1d8-4fd5-8305-de563b51f96d/_result.png'),
   ('login',  'https://image.qwenlm.ai/generated-images/b9274cf3-727c-46d5-94a7-7f681624a1d4/_result.png')
 on conflict (slot_key) do nothing;
+
+-- ============================================================
+-- TIER 1 — image Storage bucket + slot availability
+-- ============================================================
+
+-- Public bucket for all site imagery (team portraits, gallery frames, site photos).
+-- Uploads from the desk land here; the public site reads them by URL.
+insert into storage.buckets (id, name, public)
+values ('photos', 'photos', true)
+on conflict (id) do update set public = true;
+
+-- Anyone may read photos in the bucket
+drop policy if exists "photos public read" on storage.objects;
+create policy "photos public read"
+  on storage.objects for select to public
+  using (bucket_id = 'photos');
+
+-- Only signed-in staff may add / replace / remove files
+drop policy if exists "photos staff insert" on storage.objects;
+create policy "photos staff insert"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'photos');
+
+drop policy if exists "photos staff update" on storage.objects;
+create policy "photos staff update"
+  on storage.objects for update to authenticated
+  using (bucket_id = 'photos');
+
+drop policy if exists "photos staff delete" on storage.objects;
+create policy "photos staff delete"
+  on storage.objects for delete to authenticated
+  using (bucket_id = 'photos');
+
+-- Slot availability for the public booking form.
+-- Returns ONLY call-times for a date (never names/emails), so it's safe for anon.
+create or replace function public.taken_slots(for_date text)
+returns text[]
+language sql
+security definer
+set search_path = public
+as $$
+  select coalesce(array_agg(time), '{}')::text[]
+  from public.bookings
+  where date = for_date
+    and status <> 'cancelled';
+$$;
+
+grant execute on function public.taken_slots(text) to anon, authenticated;

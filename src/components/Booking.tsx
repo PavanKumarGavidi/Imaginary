@@ -3,6 +3,8 @@ import type { FormEvent } from "react";
 import { TIME_SLOTS } from "../data";
 import type { Booking as BookingType } from "../store";
 import { useStore } from "../store";
+import { supabase } from "../lib/supabase";
+import { emailNotificationsEnabled, sendBookingEmails } from "../lib/notify";
 import { Reveal } from "./ui";
 import { IconAperture, IconArrow, IconCalendar, IconClock, IconMail, IconPhone, IconPin, IconUsers } from "./Icons";
 
@@ -34,13 +36,15 @@ const EMPTY: FormState = {
 };
 
 export default function BookingSection() {
-  const { addBooking, prefill, toast, content } = useStore();
+  const { addBooking, prefill, toast, content, bookings, cloud } = useStore();
   const ct = content.contact;
   const pkgById = (id: string) => content.packages.find((p) => p.id === id);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitted, setSubmitted] = useState<BookingType | null>(null);
   const [sending, setSending] = useState(false);
+  const [takenMap, setTakenMap] = useState<Record<string, string[]>>({});
+  const [checkingSlots, setCheckingSlots] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -54,6 +58,51 @@ export default function BookingSection() {
     }));
     setSubmitted(null);
   }, [prefill]);
+
+  /* ——— slot availability for the chosen date ——— */
+  const taken = takenMap[form.date] ?? [];
+  const freeSlots = TIME_SLOTS.filter((t) => !taken.includes(t));
+
+  useEffect(() => {
+    const d = form.date;
+    if (!d) return;
+    let alive = true;
+    setCheckingSlots(true);
+    (async () => {
+      let slots: string[] = [];
+      if (cloud && supabase) {
+        /* the taken_slots() function lives in the DB — run the Tier 1 SQL once */
+        const { data, error } = await supabase.rpc("taken_slots", { for_date: d });
+        if (!error && Array.isArray(data)) slots = data as string[];
+      } else {
+        slots = bookings.filter((b) => b.date === d && b.status !== "cancelled").map((b) => b.time);
+      }
+      if (alive) {
+        setTakenMap((m) => ({ ...m, [d]: slots }));
+        setCheckingSlots(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [form.date, cloud, bookings]);
+
+  /* if the client's chosen time gets booked elsewhere, clear it with a nudge */
+  useEffect(() => {
+    if (form.time && taken.includes(form.time)) {
+      setForm((f) => ({ ...f, time: "" }));
+      toast("That call-time was just booked — pick another.", "err");
+    }
+  }, [taken, form.time, toast]);
+
+  const nearestFree = (preferred?: string): string | null => {
+    if (!freeSlots.length) return null;
+    if (preferred) {
+      const after = freeSlots.find((t) => TIME_SLOTS.indexOf(t) > TIME_SLOTS.indexOf(preferred));
+      if (after) return after;
+    }
+    return freeSlots[0];
+  };
 
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -70,6 +119,8 @@ export default function BookingSection() {
     if (!form.date) er.date = "Choose a date.";
     else if (form.date < today) er.date = "That date has already been exposed.";
     if (!form.time) er.time = "Pick a time slot.";
+    else if (taken.includes(form.time))
+      er.time = `That time is taken — nearest free: ${nearestFree(form.time) ?? "try another date"}.`;
     setErrors(er);
     return Object.keys(er).length === 0;
   };
@@ -78,8 +129,27 @@ export default function BookingSection() {
     e.preventDefault();
     if (!validate()) return;
     setSending(true);
-    // simulate the desk processing the request
-    window.setTimeout(() => {
+    // the desk develops the request…
+    window.setTimeout(async () => {
+      /* fresh availability check — guards two clients grabbing the same slot */
+      let nowTaken = taken;
+      if (cloud && supabase) {
+        const { data, error } = await supabase.rpc("taken_slots", { for_date: form.date });
+        if (!error && Array.isArray(data)) nowTaken = data as string[];
+      } else {
+        nowTaken = bookings.filter((b) => b.date === form.date && b.status !== "cancelled").map((b) => b.time);
+      }
+      if (nowTaken.includes(form.time)) {
+        setTakenMap((m) => ({ ...m, [form.date]: nowTaken }));
+        setErrors((er) => ({
+          ...er,
+          time: `Just booked by someone else — nearest free: ${nearestFree(form.time) ?? "try another date"}.`,
+        }));
+        setSending(false);
+        toast("That slot was just taken — pick another call-time.", "err");
+        return;
+      }
+
       const b = addBooking({
         name: form.name.trim(),
         email: form.email.trim(),
@@ -94,6 +164,14 @@ export default function BookingSection() {
       setSubmitted(b);
       setSending(false);
       toast(`Request ${b.ref} received — confirmation within 24h.`);
+
+      /* notify the studio inbox + the client (when EmailJS is configured) */
+      const pkgName = pkgById(b.packageId)?.name ?? b.packageId;
+      void sendBookingEmails(b, pkgName).then((r) => {
+        if (!r.enabled) return;
+        if (r.studio) toast("Email confirmation sent to you and the desk.");
+        else toast("Booking saved — the email notification failed; the desk will confirm manually.", "err");
+      });
     }, 650);
   };
 
@@ -189,6 +267,11 @@ export default function BookingSection() {
                   <div className="mt-2 inline-flex items-center gap-2 border border-[var(--amber)]/40 bg-[rgba(13,127,194,0.08)] px-3 py-1 font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--amber)]">
                     <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[var(--amber)]" /> Pending confirmation
                   </div>
+                  {emailNotificationsEnabled && (
+                    <p className="mt-3 font-mono text-[9.5px] tracking-[0.18em] uppercase text-[var(--dim)]">
+                      ✉ A copy of this request is on its way to your inbox
+                    </p>
+                  )}
                 </div>
 
                 <dl className="mt-8 grid grid-cols-1 gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
@@ -281,13 +364,41 @@ export default function BookingSection() {
                   </div>
                   <div>
                     <label className="label" htmlFor="bk-time">Call time *</label>
-                    <select id="bk-time" className={`input ${errors.time ? "err" : ""}`} value={form.time} onChange={set("time")}>
-                      <option value="">Select…</option>
-                      {TIME_SLOTS.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
+                    <select
+                      id="bk-time"
+                      className={`input ${errors.time ? "err" : ""}`}
+                      value={form.time}
+                      onChange={set("time")}
+                      disabled={!form.date}
+                    >
+                      <option value="">
+                        {!form.date ? "Pick a date first" : checkingSlots ? "Checking the ledger…" : "Select…"}
+                      </option>
+                      {TIME_SLOTS.map((t) => {
+                        const isTaken = taken.includes(t);
+                        return (
+                          <option key={t} value={t} disabled={isTaken}>
+                            {t}{isTaken ? " — booked" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
                     {errors.time && <p className="mt-1.5 text-xs text-[var(--ember)]">{errors.time}</p>}
+                    {form.date && !errors.time && !checkingSlots && (
+                      <p
+                        className={`mt-1.5 font-mono text-[10px] tracking-[0.16em] uppercase ${
+                          freeSlots.length === 0
+                            ? "text-[var(--ember)]"
+                            : freeSlots.length <= 2
+                              ? "text-[var(--amber)]"
+                              : "text-[var(--sage)]"
+                        }`}
+                      >
+                        {freeSlots.length === 0
+                          ? "Fully booked — try another date"
+                          : `${freeSlots.length} of ${TIME_SLOTS.length} call-times free on ${fmtDate(form.date)}`}
+                      </p>
+                    )}
                   </div>
                 </div>
 
