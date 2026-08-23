@@ -95,6 +95,12 @@ drop policy if exists "reviews public read" on public.reviews;
 create policy "reviews public read"
   on public.reviews for select to anon using (published = true);
 
+-- Public guestbook: visitors may submit testimonials, but ONLY as unpublished —
+-- they go live once staff approves them in the desk.
+drop policy if exists "reviews guestbook insert" on public.reviews;
+create policy "reviews guestbook insert"
+  on public.reviews for insert to anon with check (published = false);
+
 drop policy if exists "team public read" on public.team_members;
 create policy "team public read"
   on public.team_members for select to anon using (published = true);

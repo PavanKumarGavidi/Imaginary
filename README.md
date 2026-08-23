@@ -208,3 +208,41 @@ blank lines split paragraphs. Public pages: `#/journal` (list) and
 Bookings tab → **Insights** panel: sessions per month, revenue by package,
 pipeline donut, conversion rate, average lead time, busiest weekday and deposits
 paid — all computed live from the ledger.
+
+## Tier 3 — live sync, guestbook, map, mobile dock
+
+### 🌐 Realtime multi-tab sync
+
+Changes made in the desk (reviews, team, gallery, site photos, content,
+deliveries, journal) propagate to every open tab/site visitor within a second
+via Supabase Realtime. Bookings already sync live with toast + desktop alerts.
+
+One line enables the publication for the extra tables (SQL Editor → Run):
+
+```sql
+alter publication supabase_realtime add table public.reviews, public.team_members,
+  public.gallery_frames, public.site_photos, public.site_content,
+  public.deliveries, public.posts;
+```
+
+### ⭐ Client guestbook
+
+The *Kind Words* section has a guestbook form. Submissions land in the
+Reviews tab **unpublished** — approve them with the existing Live toggle.
+RLS lets anonymous visitors insert *only* unpublished reviews
+(`reviews guestbook insert` policy, already in `schema.sql`; for existing
+projects run the one-liner in `supabase/migrations/tier3.sql`).
+
+### 🗺️ Map + Getting here
+
+The Studio section embeds an OpenStreetMap marker plus streetcar / parking /
+bike notes. Coordinates live in `Sections.tsx` — update the `bbox`/`marker`
+params and the three notes to your real address.
+
+### 📱 Mobile quick-dock & WhatsApp
+
+On phones a floating dock appears after scrolling: **Call**, **WhatsApp** and
+**Book a session**. Set the WhatsApp number in the desk
+(Content → Contact → *WhatsApp number*, any format) and it also appears in the
+footer. Leave it blank to hide the WhatsApp actions (the dock then uses your
+phone number).
