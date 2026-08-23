@@ -15,6 +15,15 @@ import { Toasts } from "./components/ui";
 
 type View = "site" | "login" | "admin";
 
+/** Map the URL hash to a view so a refresh lands you back where you were. */
+const viewFromHash = (): View => {
+  if (typeof window === "undefined") return "site";
+  const h = window.location.hash;
+  if (h.startsWith("#/desk")) return "admin";
+  if (h.startsWith("#/staff")) return "login";
+  return "site";
+};
+
 function BootScreen() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6">
@@ -47,6 +56,17 @@ function Shell() {
   useEffect(() => {
     if (recovery && view !== "login") setView("login");
   }, [recovery, view]);
+
+  /* keep the URL hash in step with the view, so a refresh restores it.
+     replaceState avoids littering the browser history on every view switch,
+     and we never clobber a password-recovery link while it's being consumed. */
+  useEffect(() => {
+    if (hasRecoveryInUrl()) return;
+    const target = view === "admin" ? "#/desk" : view === "login" ? "#/staff" : "";
+    const { pathname, search } = window.location;
+    const next = target ? `${pathname}${search}${target}` : `${pathname}${search}`;
+    if (window.location.hash !== target) window.history.replaceState(null, "", next);
+  }, [view]);
 
   const goAdmin = () => setView(isAdmin ? "admin" : "login");
 
