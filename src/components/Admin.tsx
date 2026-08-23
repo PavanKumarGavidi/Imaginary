@@ -24,7 +24,9 @@ import {
   IconX,
 } from "./Icons";
 import { SafeImg, ScrambleText } from "./ui";
-import { ContentPanel, GalleryPanel, PhotosPanel, ReviewsPanel, TeamPanel } from "./AdminPanels";
+import { ContentPanel, DeliveriesPanel, GalleryPanel, JournalPanel, PhotosPanel, ReviewsPanel, TeamPanel } from "./AdminPanels";
+import Insights from "./Insights";
+import { stripeUrl } from "../lib/util";
 
 const STATUS_META: Record<BookingStatus, { label: string; dot: string; pill: string }> = {
   pending: { label: "Pending", dot: "bg-[var(--amber)]", pill: "border-[var(--amber)]/50 bg-[rgba(13,127,194,0.1)] text-[var(--amber)]" },
@@ -47,6 +49,8 @@ const TABS = [
   { id: "gallery", label: "Gallery" },
   { id: "photos", label: "Photos" },
   { id: "content", label: "Content" },
+  { id: "journal", label: "Journal" },
+  { id: "deliveries", label: "Deliveries" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
@@ -524,7 +528,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 
 /* ————————————————— DASHBOARD ————————————————— */
 export function Dashboard({ onExit }: { onExit: () => void }) {
-  const { bookings, setBookingStatus, removeBooking, reviews, team, frames, logout, toast, cloud, syncError, content, unseenCount, markSeen, requestNotifyPermission } = useStore();
+  const { bookings, setBookingStatus, removeBooking, setBookingDeposit, reviews, team, frames, posts, deliveries, logout, toast, cloud, syncError, content, unseenCount, markSeen, requestNotifyPermission } = useStore();
   const pkgOf = (id: string) => content.packages.find((p) => p.id === id);
   const [tab, setTab] = useState<Tab>("bookings");
 
@@ -583,6 +587,21 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
     toast(`${b.ref} removed from the ledger.`, "err");
   };
 
+  /* ————— deposit tracking ————— */
+  const toggleDeposit = (b: Booking) => {
+    setBookingDeposit(b.id, !b.depositPaid);
+    toast(b.depositPaid ? `${b.ref} deposit marked as due again.` : `${b.ref} deposit marked paid — date locked.`);
+  };
+  const copyPayLink = (b: Booking) => {
+    const link = pkgOf(b.packageId)?.stripeLink;
+    if (!link) return;
+    const url = stripeUrl(link, b.email, b.ref);
+    void navigator.clipboard?.writeText(url).then(
+      () => toast("Deposit link copied — client email & ref prefilled."),
+      () => toast(url)
+    );
+  };
+
   const exportCsv = () => {
     const head = "Ref,Name,Email,Phone,Session,Package,Date,Time,Guests,Status,Notes,Created";
     const rows = visible.map((b) =>
@@ -609,6 +628,8 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
     gallery: frames.length,
     photos: 3,
     content: 6,
+    journal: posts.length,
+    deliveries: deliveries.length,
   };
 
   return (
@@ -745,6 +766,9 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                 ))}
               </div>
 
+              {/* insights */}
+              <Insights />
+
               {/* controls */}
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 {(["all", "pending", "confirmed", "completed", "cancelled"] as const).map((s) => {
@@ -808,6 +832,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                           <th className="px-4 py-3.5 font-medium">Session</th>
                           <th className="px-4 py-3.5 font-medium">Date</th>
                           <th className="px-4 py-3.5 font-medium">Package</th>
+                          <th className="px-4 py-3.5 font-medium">Deposit</th>
                           <th className="px-4 py-3.5 font-medium">Status</th>
                           <th className="px-4 py-3.5 text-right font-medium">Actions</th>
                         </tr>
@@ -831,6 +856,22 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                             <td className="px-4 py-4">
                               <div className="text-[var(--ink)]">{pkgOf(b.packageId)?.name ?? "—"}</div>
                               <div className="font-mono text-[10px] text-[var(--dim)]">{usd(pkgOf(b.packageId)?.price ?? 0)}</div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <button
+                                onClick={() => toggleDeposit(b)}
+                                title="Toggle deposit paid"
+                                className={`chip transition-all hover:-translate-y-0.5 ${
+                                  b.depositPaid ? "!border-[var(--sage)]/60 !text-[var(--sage)]" : "hover:!border-[var(--amber)] hover:!text-[var(--amber)]"
+                                }`}
+                              >
+                                {b.depositPaid ? "Paid ✓" : "Due"}
+                              </button>
+                              {pkgOf(b.packageId)?.stripeLink && (
+                                <button onClick={() => copyPayLink(b)} className="mt-1.5 block font-mono text-[9px] tracking-[0.14em] uppercase text-[var(--dim)] transition-colors hover:text-[var(--amber)]">
+                                  Copy pay link
+                                </button>
+                              )}
                             </td>
                             <td className="px-4 py-4">
                               <select
@@ -880,6 +921,19 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                           <span className="flex items-center justify-end gap-1.5"><IconUsers width={13} height={13} className="text-[var(--dim)]" /> {b.guests}</span>
                         </div>
                         {b.notes && <p className="mt-3 border-l-2 border-[var(--line)] pl-3 text-xs italic text-[var(--dim)]">{b.notes}</p>}
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => toggleDeposit(b)}
+                            className={`chip transition-colors ${b.depositPaid ? "!border-[var(--sage)]/60 !text-[var(--sage)]" : "hover:!border-[var(--amber)] hover:!text-[var(--amber)]"}`}
+                          >
+                            Deposit {b.depositPaid ? "paid ✓" : "due"}
+                          </button>
+                          {pkgOf(b.packageId)?.stripeLink && (
+                            <button onClick={() => copyPayLink(b)} className="font-mono text-[9px] tracking-[0.14em] uppercase text-[var(--dim)] transition-colors hover:text-[var(--amber)]">
+                              Copy pay link
+                            </button>
+                          )}
+                        </div>
                         <div className="mt-4 flex items-center gap-2">
                           <select
                             value={b.status}
@@ -912,6 +966,8 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
           {tab === "gallery" && <GalleryPanel />}
           {tab === "photos" && <PhotosPanel />}
           {tab === "content" && <ContentPanel />}
+          {tab === "journal" && <JournalPanel />}
+          {tab === "deliveries" && <DeliveriesPanel />}
         </div>
       </main>
 

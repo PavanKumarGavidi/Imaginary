@@ -10,18 +10,45 @@ import { Faq, Pricing, Testimonials } from "./components/Closing";
 import BookingSection from "./components/Booking";
 import Footer from "./components/Footer";
 import { Dashboard, LoginPage } from "./components/Admin";
+import { JournalListPage, JournalPostPage } from "./components/Journal";
+import DeliveryPage from "./components/Delivery";
 import { IconAperture } from "./components/Icons";
 import { Toasts } from "./components/ui";
 
-type View = "site" | "login" | "admin";
+type View = "site" | "login" | "admin" | "journal" | "post" | "delivery";
 
-/** Read the current view back out of the URL hash (survives refresh). */
-const viewFromHash = (): View => {
-  if (typeof window === "undefined") return "site";
+interface Route {
+  view: View;
+  param: string | null;
+}
+
+/** Read the current route back out of the URL hash (survives refresh). */
+const routeFromHash = (): Route => {
+  if (typeof window === "undefined") return { view: "site", param: null };
   const h = window.location.hash;
-  if (h.startsWith("#/desk")) return "admin";
-  if (h.startsWith("#/staff") || h.startsWith("#/login")) return "login";
-  return "site";
+  if (h.startsWith("#/desk")) return { view: "admin", param: null };
+  if (h.startsWith("#/staff") || h.startsWith("#/login")) return { view: "login", param: null };
+  if (h.startsWith("#/journal/")) return { view: "post", param: decodeURIComponent(h.slice("#/journal/".length)) };
+  if (h.startsWith("#/journal")) return { view: "journal", param: null };
+  if (h.startsWith("#/delivery/")) return { view: "delivery", param: decodeURIComponent(h.slice("#/delivery/".length)) };
+  return { view: "site", param: null };
+};
+
+const hashFor = (view: View, param: string | null): string => {
+  switch (view) {
+    case "admin":
+      return "#/desk";
+    case "login":
+      return "#/staff";
+    case "journal":
+      return "#/journal";
+    case "post":
+      return `#/journal/${param ?? ""}`;
+    case "delivery":
+      return `#/delivery/${param ?? ""}`;
+    default:
+      return "";
+  }
 };
 
 function BootScreen() {
@@ -40,13 +67,24 @@ function BootScreen() {
 }
 
 function Shell() {
-  const { isAdmin, setPrefill, ready, recovery } = useStore();
+  const { isAdmin, setPrefill, ready, recovery, posts, deliveries } = useStore();
   /* start from the URL hash so a refresh (or bookmark) restores the exact view */
-  const [view, setView] = useState<View>(() => viewFromHash());
+  const initial = routeFromHash();
+  const [view, setView] = useState<View>(initial.view);
+  const [param, setParam] = useState<string | null>(initial.param);
 
-  /* browser back/forward between site ↔ desk follows the hash too */
+  const navigate = (v: View, p: string | null = null) => {
+    setView(v);
+    setParam(p);
+  };
+
+  /* browser back/forward between views follows the hash too */
   useEffect(() => {
-    const onHash = () => setView(viewFromHash());
+    const onHash = () => {
+      const r = routeFromHash();
+      setView(r.view);
+      setParam(r.param);
+    };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -57,12 +95,13 @@ function Shell() {
 
   /* a password-reset link should land on the login screen, ready to set a new password */
   useEffect(() => {
-    if (hasRecoveryInUrl()) setView("login");
+    if (hasRecoveryInUrl()) navigate("login");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* if Supabase confirms the recovery session a beat later (or the user lands mid-browse), route them to login */
   useEffect(() => {
-    if (recovery && view !== "login") setView("login");
+    if (recovery && view !== "login") navigate("login");
   }, [recovery, view]);
 
   /* keep the URL hash in step with the view, so a refresh restores it.
@@ -70,17 +109,30 @@ function Shell() {
      and we never clobber a password-recovery link while it's being consumed. */
   useEffect(() => {
     if (hasRecoveryInUrl()) return;
-    const target = view === "admin" ? "#/desk" : view === "login" ? "#/staff" : "";
+    const target = hashFor(view, param);
     const { pathname, search } = window.location;
     const next = target ? `${pathname}${search}${target}` : `${pathname}${search}`;
     if (window.location.hash !== target) window.history.replaceState(null, "", next);
-  }, [view]);
+  }, [view, param]);
 
-  const goAdmin = () => setView(isAdmin ? "admin" : "login");
+  /* per-view document titles — good for tabs, bookmarks and SEO */
+  useEffect(() => {
+    const base = "Imagine — Photography Studio & Darkroom";
+    if (view === "admin") document.title = "Studio Desk — Imagine";
+    else if (view === "login") document.title = "Staff — Imagine";
+    else if (view === "journal") document.title = "Journal — Imagine";
+    else if (view === "post") document.title = `${posts.find((p) => p.slug === param)?.title ?? "Journal"} — Imagine`;
+    else if (view === "delivery") {
+      const d = deliveries.find((x) => x.id === param);
+      document.title = d ? `${d.title} — Private Gallery` : "Private Gallery — Imagine";
+    } else document.title = base;
+  }, [view, param, posts, deliveries]);
+
+  const goAdmin = () => navigate(isAdmin ? "admin" : "login");
 
   /** Prefill the booking form (session / package) and glide to it. */
   const bookWith = (session?: string, packageId?: string) => {
-    setView("site");
+    navigate("site");
     setPrefill({ session, packageId });
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -114,14 +166,18 @@ function Shell() {
         </>
       )}
 
-      {view === "login" && <LoginPage onBack={() => setView("site")} onSuccess={() => setView("admin")} />}
+      {view === "login" && <LoginPage onBack={() => navigate("site")} onSuccess={() => navigate("admin")} />}
 
       {view === "admin" &&
         (isAdmin ? (
-          <Dashboard onExit={() => setView("site")} />
+          <Dashboard onExit={() => navigate("site")} />
         ) : (
-          <LoginPage onBack={() => setView("site")} onSuccess={() => setView("admin")} />
+          <LoginPage onBack={() => navigate("site")} onSuccess={() => navigate("admin")} />
         ))}
+
+      {view === "journal" && <JournalListPage />}
+      {view === "post" && <JournalPostPage slug={param ?? ""} />}
+      {view === "delivery" && <DeliveryPage id={param ?? ""} />}
     </div>
   );
 }

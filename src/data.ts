@@ -93,6 +93,8 @@ export interface Pkg {
   hours: string;
   features: string[];
   featured?: boolean;
+  /** Optional Stripe Payment Link — clients can pay the 30% deposit up front. */
+  stripeLink?: string;
 }
 
 export const PACKAGES: Pkg[] = [

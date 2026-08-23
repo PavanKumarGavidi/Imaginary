@@ -3,7 +3,8 @@ import type { FormEvent, ReactNode } from "react";
 import { CATEGORIES } from "../data";
 import type { Faq, Pkg, Service } from "../data";
 import { DEFAULT_SITE_CONTENT, DEFAULT_SITE_PHOTOS, useStore } from "../store";
-import type { AboutContent, ContactContent, GalleryFrame, HeroContent, Review, SitePhotoKey, TeamHue, TeamMember } from "../store";
+import type { AboutContent, ContactContent, Delivery, DeliveryPhoto, GalleryFrame, HeroContent, Post, Review, SitePhotoKey, TeamHue, TeamMember } from "../store";
+import { fmtLongDate, hashText, slugify } from "../lib/util";
 import { storeImage } from "../lib/images";
 import type { PhotoFolder } from "../lib/images";
 import { isSupabaseConfigured as supabaseConfigured } from "../lib/supabase";
@@ -1161,6 +1162,9 @@ function PackagesManager() {
             <Field label="Hours line">
               <input className="input" value={f.hours} placeholder="3 hours · studio + location" onChange={(e) => setF({ ...f, hours: e.target.value })} />
             </Field>
+            <Field label="Stripe Payment Link (optional — clients pay the 30% deposit up front)" className="sm:col-span-2">
+              <input className="input font-mono !text-xs" value={f.stripeLink ?? ""} placeholder="https://buy.stripe.com/…" onChange={(e) => setF({ ...f, stripeLink: e.target.value.trim() || undefined })} />
+            </Field>
             <Field label="Features (one per line)" className="sm:col-span-2">
               <textarea className="input resize-none" rows={4} value={featuresText} placeholder={"Up to 3 outfits\n60 retouched frames"} onChange={(e) => setFeaturesText(e.target.value)} />
             </Field>
@@ -1180,6 +1184,7 @@ function PackagesManager() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-display text-xl text-[var(--ink)]">{p.name}</span>
                 {p.featured && <span className="chip !border-[var(--amber)] !text-[var(--amber)]">Featured</span>}
+                {p.stripeLink && <span className="chip !border-[var(--sage)]/60 !text-[var(--sage)]">Stripe linked</span>}
               </div>
               <div className="mt-0.5 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--dim)]">
                 ${p.price} · {p.hours} · {p.features.length} features
@@ -1344,5 +1349,315 @@ export function ContentPanel() {
       {sec === "faqs" && <FaqManager />}
       {sec === "contact" && <ContactForm />}
     </div>
+  );
+}
+
+/* ——————————————————— CLIENT DELIVERIES ——————————————————— */
+const deliveryLink = (id: string) => `${window.location.origin}${window.location.pathname}#/delivery/${id}`;
+
+export function DeliveriesPanel() {
+  const { deliveries, addDelivery, updateDelivery, removeDelivery, toggleDelivery, toast } = useStore();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Delivery | null>(null);
+  const [title, setTitle] = useState("");
+  const [clientName, setClientName] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [downloads, setDownloads] = useState(true);
+  const [photos, setPhotos] = useState<DeliveryPhoto[]>([]);
+
+  const close = () => {
+    setOpen(false);
+    setEditing(null);
+    setTitle("");
+    setClientName("");
+    setClientEmail("");
+    setPassword("");
+    setDownloads(true);
+    setPhotos([]);
+  };
+
+  const startEdit = (d: Delivery) => {
+    setEditing(d);
+    setTitle(d.title);
+    setClientName(d.clientName);
+    setClientEmail(d.clientEmail);
+    setPassword("");
+    setDownloads(d.downloads);
+    setPhotos(d.photos.map((p) => ({ ...p })));
+    setOpen(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const save = async () => {
+    if (!title.trim() || !clientName.trim()) {
+      toast("Title and client name are required.", "err");
+      return;
+    }
+    if (!editing && password.length < 4) {
+      toast("Set a gallery key (at least 4 characters).", "err");
+      return;
+    }
+    if (photos.length === 0) {
+      toast("Add at least one frame before delivering.", "err");
+      return;
+    }
+    const passHash = password ? await hashText(password) : editing?.passHash ?? "";
+    const payload = {
+      title: title.trim(),
+      clientName: clientName.trim(),
+      clientEmail: clientEmail.trim(),
+      passHash,
+      photos,
+      downloads,
+      published: editing?.published ?? true,
+    };
+    if (editing) {
+      updateDelivery(editing.id, payload);
+      toast("Gallery updated.");
+    } else {
+      addDelivery(payload);
+      toast(`“${payload.title}” delivered — copy its private link below.`);
+    }
+    close();
+  };
+
+  return (
+    <>
+      <PanelShell
+        title="Client delivery galleries"
+        count={deliveries.length}
+        liveCount={deliveries.filter((d) => d.published).length}
+        formOpen={open}
+        onToggleForm={() => (open ? close() : (setEditing(null), setOpen(true)))}
+        formTitle="gallery"
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Gallery title">
+            <input className="input" value={title} placeholder="Lindqvist Wedding — Dunmore Hall" onChange={(e) => setTitle(e.target.value)} />
+          </Field>
+          <Field label="Client name">
+            <input className="input" value={clientName} placeholder="Maya Lindqvist" onChange={(e) => setClientName(e.target.value)} />
+          </Field>
+          <Field label="Client email (shown as contact on the page)">
+            <input className="input" value={clientEmail} placeholder="maya@…" onChange={(e) => setClientEmail(e.target.value)} />
+          </Field>
+          <Field label={editing ? "Gallery key (leave blank to keep current)" : "Gallery key (min 4 chars)"}>
+            <input className="input font-mono !text-xs" value={password} placeholder="sunflower-42" onChange={(e) => setPassword(e.target.value)} />
+          </Field>
+        </div>
+
+        <div className="mt-5 flex items-center gap-4">
+          <Toggle on={downloads} onToggle={() => setDownloads(!downloads)} labelOn="Downloads on" labelOff="View only" />
+          <span className="font-mono text-[9px] tracking-[0.16em] uppercase text-[var(--dim)]">Lets the client save full-size frames</span>
+        </div>
+
+        <div className="mt-6">
+          <div className="label">Frames ({photos.length})</div>
+          {photos.length > 0 && (
+            <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {photos.map((p, i) => (
+                <div key={i} className="flex items-center gap-3 border border-[var(--line-soft)] p-2.5">
+                  <img src={p.url} alt="" className="h-14 w-14 shrink-0 border border-[var(--line)] object-cover" />
+                  <input className="input !py-1.5 text-xs" value={p.caption} placeholder="Caption (optional)" onChange={(e) => setPhotos(photos.map((x, j) => (j === i ? { ...x, caption: e.target.value } : x)))} />
+                  <button type="button" onClick={() => setPhotos(photos.filter((_, j) => j !== i))} className="shrink-0 text-[var(--dim)] transition-colors hover:text-[var(--ember)]" aria-label="Remove frame">
+                    <IconTrash width={15} height={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <UploadField value="" label="Add frames to the delivery" folder="deliveries" onFile={(url) => setPhotos((p) => [...p, { url, caption: "" }])} onClear={() => undefined} />
+        </div>
+
+        <div className="mt-5 flex gap-3 border-t border-[var(--line-soft)] pt-4">
+          <button type="button" onClick={() => void save()} className="btn-solid !py-2.5">
+            <IconCheck width={15} height={15} /> {editing ? "Save changes" : "Create gallery"}
+          </button>
+          <button type="button" onClick={close} className="btn-ghost !py-2.5">Cancel</button>
+        </div>
+      </PanelShell>
+
+      <div className="mt-6 grid gap-3">
+        {deliveries.length === 0 && (
+          <p className="panel p-8 text-center text-sm text-[var(--muted)]">
+            No deliveries yet. When a job is completed, build its private gallery here and send the client the link + key.
+          </p>
+        )}
+        {deliveries.map((d) => (
+          <Row key={d.id} dimmed={!d.published}>
+            {d.photos[0] ? (
+              <img src={d.photos[0].url} alt="" className="h-16 w-16 shrink-0 border border-[var(--line)] object-cover" />
+            ) : (
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center border border-[var(--line)] bg-[var(--bg2)] text-[var(--dim)]">—</div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-xl text-[var(--ink)]">{d.title}</div>
+              <div className="mt-0.5 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--dim)]">
+                {d.clientName} · {d.photos.length} frames · {fmtLongDate(d.createdAt)}
+                {d.downloads ? " · downloads on" : " · view only"}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => {
+                  void navigator.clipboard?.writeText(deliveryLink(d.id)).then(
+                    () => toast("Private link copied — send it with the gallery key."),
+                    () => toast(deliveryLink(d.id))
+                  );
+                }}
+                className="border border-[var(--amber)] px-2.5 py-1.5 font-mono text-[9.5px] tracking-[0.16em] uppercase text-[var(--amber)] transition-colors hover:bg-[var(--amber)] hover:text-white"
+              >
+                Copy link
+              </button>
+              <Toggle on={d.published} onToggle={() => toggleDelivery(d.id)} labelOn="Live" labelOff="Hidden" />
+              <button
+                onClick={() => startEdit(d)}
+                className="border border-[var(--line)] px-2.5 py-1.5 font-mono text-[9.5px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)]"
+              >
+                Edit
+              </button>
+              <DeleteButton onConfirm={() => { removeDelivery(d.id); toast(`“${d.title}” taken down.`, "err"); }} />
+            </div>
+          </Row>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/* ——————————————————— JOURNAL ——————————————————— */
+const EMPTY_POST = { title: "", tag: "Behind the scenes", excerpt: "", cover: "", body: "" };
+const POST_TAGS = ["Behind the scenes", "Weddings", "Tips & posing", "Film & darkroom", "Studio news"];
+
+export function JournalPanel() {
+  const { posts, addPost, updatePost, removePost, togglePost, toast } = useStore();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Post | null>(null);
+  const [f, setF] = useState(EMPTY_POST);
+  const [published, setPublished] = useState(true);
+
+  const close = () => {
+    setOpen(false);
+    setEditing(null);
+    setF(EMPTY_POST);
+    setPublished(true);
+  };
+
+  const startEdit = (p: Post) => {
+    setEditing(p);
+    setF({ title: p.title, tag: p.tag, excerpt: p.excerpt, cover: p.cover, body: p.body });
+    setPublished(p.published);
+    setOpen(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const save = () => {
+    if (!f.title.trim()) {
+      toast("Give the story a headline.", "err");
+      return;
+    }
+    if (!f.body.trim()) {
+      toast("The body needs at least a paragraph.", "err");
+      return;
+    }
+    let slug = slugify(f.title);
+    if (posts.some((p) => p.slug === slug && p.id !== editing?.id)) slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
+    const payload = { ...f, title: f.title.trim(), slug, published };
+    if (editing) {
+      updatePost(editing.id, payload);
+      toast("Story updated.");
+    } else {
+      addPost(payload);
+      toast("Story published to the journal.");
+    }
+    close();
+  };
+
+  return (
+    <>
+      <PanelShell
+        title="Journal & stories"
+        count={posts.length}
+        liveCount={posts.filter((p) => p.published).length}
+        formOpen={open}
+        onToggleForm={() => (open ? close() : (setEditing(null), setOpen(true)))}
+        formTitle="story"
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Headline">
+            <input className="input" value={f.title} placeholder="Hello, daylight — rewiring the north window" onChange={(e) => setF({ ...f, title: e.target.value })} />
+          </Field>
+          <Field label="Tag">
+            <select className="input" value={f.tag} onChange={(e) => setF({ ...f, tag: e.target.value })}>
+              {POST_TAGS.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Excerpt (shows on cards & search results)" className="sm:col-span-2">
+            <textarea className="input resize-none" rows={2} value={f.excerpt} onChange={(e) => setF({ ...f, excerpt: e.target.value })} />
+          </Field>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
+          <div>
+            <div className="label">Cover</div>
+            {f.cover && <img src={f.cover} alt="" className="mb-3 h-28 w-full border border-[var(--line)] object-cover" />}
+            <UploadField value={f.cover} label="Upload cover" folder="journal" onFile={(url) => setF({ ...f, cover: url })} onClear={() => setF({ ...f, cover: "" })} />
+          </div>
+          <Field label="Body — start a line with “## ” for a heading, “> ” for a pull-quote, blank line = new paragraph">
+            <textarea className="input resize-y font-mono !text-xs leading-relaxed" rows={10} value={f.body} placeholder={"## The problem with pretty light\n\nFor nine years our portrait bay ran on tungsten…\n\n> Light is not something you add to a person."} onChange={(e) => setF({ ...f, body: e.target.value })} />
+          </Field>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-[var(--line-soft)] pt-4">
+          <Toggle on={published} onToggle={() => setPublished(!published)} labelOn="Publish" labelOff="Draft" />
+          <button type="button" onClick={save} className="btn-solid !py-2.5">
+            <IconCheck width={15} height={15} /> {editing ? "Save changes" : "Publish story"}
+          </button>
+          <button type="button" onClick={close} className="btn-ghost !py-2.5">Cancel</button>
+        </div>
+      </PanelShell>
+
+      <div className="mt-6 grid gap-3">
+        {posts.length === 0 && (
+          <p className="panel p-8 text-center text-sm text-[var(--muted)]">
+            The press is cold — write the first story. Wedding recaps and lighting experiments perform best.
+          </p>
+        )}
+        {posts.map((p) => (
+          <Row key={p.id} dimmed={!p.published}>
+            {p.cover ? (
+              <img src={p.cover} alt="" className="h-16 w-20 shrink-0 border border-[var(--line)] object-cover" />
+            ) : (
+              <div className="flex h-16 w-20 shrink-0 items-center justify-center border border-[var(--line)] bg-[var(--bg2)] text-[var(--dim)]">—</div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-display text-xl text-[var(--ink)]">{p.title}</span>
+                <span className="chip">{p.tag}</span>
+              </div>
+              <div className="mt-0.5 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--dim)]">
+                /{p.slug} · {fmtLongDate(p.createdAt)}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <a href={`#/journal/${p.slug}`} className="border border-[var(--line)] px-2.5 py-1.5 font-mono text-[9.5px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)]">
+                View
+              </a>
+              <Toggle on={p.published} onToggle={() => togglePost(p.id)} labelOn="Live" labelOff="Draft" />
+              <button
+                onClick={() => startEdit(p)}
+                className="border border-[var(--line)] px-2.5 py-1.5 font-mono text-[9.5px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)]"
+              >
+                Edit
+              </button>
+              <DeleteButton onConfirm={() => { removePost(p.id); toast(`“${p.title}” unpublished & removed.`, "err"); }} />
+            </div>
+          </Row>
+        ))}
+      </div>
+    </>
   );
 }

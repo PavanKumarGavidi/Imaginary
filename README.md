@@ -166,3 +166,45 @@ calls it when a date is chosen and:
 
 The function returns only times for a date (never names/emails), so it's safe to
 expose to anonymous visitors.
+
+## Tier 2 — deposits, deliveries, journal, insights
+
+**One-time SQL** (existing projects): run `supabase/migrations/tier2.sql` in the
+SQL Editor. It adds `deposit_paid` to bookings plus the `deliveries` and `posts`
+tables, their RLS policies, and a starter journal post.
+
+### 💳 Deposits via Stripe Payment Links (no code, no fees until you earn)
+
+1. In Stripe: **Payment Links → New** — create one link per package (set the
+   amount to that package's 30% deposit, e.g. `$168` for a $560 package).
+2. In the desk: **Content tab → Packages → Edit** → paste the link into
+   *Stripe Payment Link* → publish.
+3. Effect:
+   - The client's booking confirmation shows **"Pay $X deposit"** — it opens
+     Stripe with their email and booking ref prefilled (`client_reference_id`).
+   - The desk's Bookings tab shows a **Deposit: Due / Paid** chip per booking
+     (click to toggle when the payment lands in Stripe) plus **Copy pay link**.
+4. Matching payments to bookings: in Stripe, open a payment and look at its
+   *client reference ID* — it's the booking ref (e.g. `IM-3F7A`).
+
+### 🔒 Client delivery galleries
+
+Desk → **Deliveries tab** → create a gallery: title, client, email, a gallery
+key (4+ chars), upload frames, toggle downloads. **Copy link** gives the private
+URL (`#/delivery/<id>`) — email it to the client *with their key*. Clients see a
+password gate, then their frames with captions, a lightbox, and per-photo Save
+buttons when downloads are on. Keys are stored as SHA-256 hashes (convenience
+privacy, not bank-grade — fine for photo delivery).
+
+### 📝 Journal
+
+Desk → **Journal tab** → write stories (headline, tag, excerpt, cover, body).
+Body formatting: a line starting `## ` becomes a heading, `> ` a pull-quote,
+blank lines split paragraphs. Public pages: `#/journal` (list) and
+`#/journal/<slug>` (article), linked from the nav and footer.
+
+### 📊 Insights
+
+Bookings tab → **Insights** panel: sessions per month, revenue by package,
+pipeline donut, conversion rate, average lead time, busiest weekday and deposits
+paid — all computed live from the ledger.

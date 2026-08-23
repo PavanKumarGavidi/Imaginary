@@ -5,6 +5,7 @@ import type { Booking as BookingType } from "../store";
 import { useStore } from "../store";
 import { supabase } from "../lib/supabase";
 import { emailNotificationsEnabled, sendBookingEmails } from "../lib/notify";
+import { stripeUrl } from "../lib/util";
 import { Reveal } from "./ui";
 import { IconAperture, IconArrow, IconCalendar, IconClock, IconMail, IconPhone, IconPin, IconUsers } from "./Icons";
 
@@ -273,6 +274,25 @@ export default function BookingSection() {
                     </p>
                   )}
                 </div>
+
+                {(() => {
+                  const p = pkgById(submitted.packageId);
+                  if (!p?.stripeLink) return null;
+                  const deposit = Math.round(p.price * 0.3);
+                  return (
+                    <div className="mt-6 flex flex-col items-center gap-4 border border-[var(--sage)]/40 bg-[rgba(47,138,99,0.06)] p-5 text-center sm:flex-row sm:justify-between sm:text-left">
+                      <div>
+                        <div className="font-display text-xl text-[var(--ink)]">Skip the wait — lock it now.</div>
+                        <p className="mt-0.5 text-xs leading-relaxed text-[var(--muted)]">
+                          Pay the 30% deposit (${deposit}) and your date is confirmed instantly. Otherwise we confirm within 24h.
+                        </p>
+                      </div>
+                      <a href={stripeUrl(p.stripeLink, submitted.email, submitted.ref)} target="_blank" rel="noopener noreferrer" className="btn-solid shrink-0">
+                        Pay ${deposit} deposit <IconArrow width={15} height={15} />
+                      </a>
+                    </div>
+                  );
+                })()}
 
                 <dl className="mt-8 grid grid-cols-1 gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
                   {[

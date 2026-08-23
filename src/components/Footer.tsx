@@ -82,6 +82,7 @@ export default function Footer({ onAdmin }: { onAdmin: () => void }) {
                 ["Services", "#services"],
                 ["Packages", "#packages"],
                 ["The studio", "#studio"],
+                ["The journal", "#/journal"],
                 ["FAQ", "#faq"],
                 ["Book a session", "#book"],
               ].map(([label, href]) => (

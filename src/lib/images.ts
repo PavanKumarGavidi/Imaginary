@@ -16,7 +16,7 @@ export interface ProcessedImage {
   dataUrl: string;
 }
 
-export type PhotoFolder = "team" | "gallery" | "photos";
+export type PhotoFolder = "team" | "gallery" | "photos" | "deliveries" | "journal";
 
 /** Downscale + re-encode an image file. Rejects for non-images / >6 MB. */
 export function readAndResize(file: File, maxDim = 1100): Promise<ProcessedImage> {

@@ -20,6 +20,7 @@ export interface Booking {
   guests: number;
   notes: string;
   status: BookingStatus;
+  depositPaid?: boolean;
   createdAt: string;
 }
 
@@ -143,6 +144,36 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   faqs: FAQS,
 };
 
+/* ————— client delivery galleries ————— */
+export interface DeliveryPhoto {
+  url: string;
+  caption: string;
+}
+export interface Delivery {
+  id: string;
+  title: string;
+  clientName: string;
+  clientEmail: string;
+  passHash: string;
+  photos: DeliveryPhoto[];
+  downloads: boolean;
+  published: boolean;
+  createdAt: string;
+}
+
+/* ————— journal posts ————— */
+export interface Post {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  cover: string;
+  body: string;
+  tag: string;
+  published: boolean;
+  createdAt: string;
+}
+
 export interface ToastMsg {
   id: number;
   msg: string;
@@ -171,6 +202,18 @@ interface Store {
   setSitePhoto: (key: SitePhotoKey, url: string) => void;
   /** Replace one content section (hero / about / contact / services / packages / faqs). */
   updateContent: <K extends ContentKey>(key: K, value: SiteContent[K]) => void;
+  deliveries: Delivery[];
+  addDelivery: (d: Omit<Delivery, "id" | "createdAt">) => void;
+  updateDelivery: (id: string, d: Omit<Delivery, "id" | "createdAt">) => void;
+  removeDelivery: (id: string) => void;
+  toggleDelivery: (id: string) => void;
+  posts: Post[];
+  addPost: (p: Omit<Post, "id" | "createdAt">) => void;
+  updatePost: (id: string, p: Omit<Post, "id" | "createdAt">) => void;
+  removePost: (id: string) => void;
+  togglePost: (id: string) => void;
+  /** Flip a booking's deposit flag (Stripe payment reconciliation). */
+  setBookingDeposit: (id: string, paid: boolean) => void;
   /** Change the signed-in admin's password. Returns an error message, or null on success. */
   changePassword: (current: string, next: string) => Promise<string | null>;
   /** Pending bookings that landed since the admin last viewed the ledger. */
@@ -215,6 +258,8 @@ const LS_TEAM = "imagine_team_v1";
 const LS_FRAMES = "imagine_frames_v1";
 const LS_PHOTOS = "imagine_photos_v1";
 const LS_CONTENT = "imagine_content_v1";
+const LS_DELIVERIES = "imagine_deliveries_v1";
+const LS_POSTS = "imagine_posts_v1";
 
 const cloud = isSupabaseConfigured;
 
@@ -252,6 +297,7 @@ const bookingToRow = (b: Booking) => ({
   guests: b.guests,
   notes: b.notes,
   status: b.status,
+  deposit_paid: Boolean(b.depositPaid),
   created_at: b.createdAt,
 });
 const rowToBooking = (r: BookingRow): Booking => ({
@@ -267,6 +313,7 @@ const rowToBooking = (r: BookingRow): Booking => ({
   guests: Number(r.guests ?? 1),
   notes: String(r.notes ?? ""),
   status: (r.status as BookingStatus) ?? "pending",
+  depositPaid: Boolean((r as { deposit_paid?: unknown }).deposit_paid),
   createdAt: String(r.created_at ?? new Date().toISOString()),
 });
 
@@ -281,6 +328,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [frames, setFrames] = useState<GalleryFrame[]>(() => (cloud ? [] : seedFrames()));
   const [sitePhotos, setSitePhotos] = useState<SitePhotos>(() => ({ ...DEFAULT_SITE_PHOTOS, ...load(LS_PHOTOS, {} as Partial<SitePhotos>) }));
   const [content, setContentState] = useState<SiteContent>(() => ({ ...DEFAULT_SITE_CONTENT, ...load(LS_CONTENT, {} as Partial<SiteContent>) }));
+  const [deliveries, setDeliveries] = useState<Delivery[]>(() => load(LS_DELIVERIES, [] as Delivery[]));
+  const [posts, setPosts] = useState<Post[]>(() => load(LS_POSTS, [] as Post[]));
   const [isAdmin, setIsAdmin] = useState<boolean>(() => (cloud ? false : load(LS_ADMIN, false)));
   const [ready, setReady] = useState(!cloud);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -351,13 +400,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     let alive = true;
     (async () => {
       try {
-        const [b, r, t, f, ph, cn, sess] = await Promise.all([
+        const [b, r, t, f, ph, cn, dl, po, sess] = await Promise.all([
           supabase.from("bookings").select("*").order("created_at", { ascending: false }),
           supabase.from("reviews").select("*"),
           supabase.from("team_members").select("*"),
           supabase.from("gallery_frames").select("*"),
           supabase.from("site_photos").select("slot_key,img"),
           supabase.from("site_content").select("key,value"),
+          supabase.from("deliveries").select("*").order("created_at", { ascending: false }),
+          supabase.from("posts").select("*").order("created_at", { ascending: false }),
           supabase.auth.getSession(),
         ]);
         if (!alive) return;
@@ -393,6 +444,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               .upsert((Object.keys(DEFAULT_SITE_CONTENT) as ContentKey[]).map((k) => ({ key: k, value: DEFAULT_SITE_CONTENT[k] })))
               .then(() => undefined);
           }
+        }
+        /* optional tables (deliveries / posts) — tolerated on older projects */
+        if (Array.isArray(dl.data) && dl.data.length) setDeliveries((dl.data as Record<string, unknown>[]).map(rowToDelivery));
+        if (Array.isArray(po.data) && po.data.length) {
+          setPosts(
+            (po.data as Record<string, unknown>[]).map((p) => ({
+              id: String(p.id),
+              slug: String(p.slug ?? ""),
+              title: String(p.title ?? ""),
+              excerpt: String(p.excerpt ?? ""),
+              cover: String(p.cover ?? ""),
+              body: String(p.body ?? ""),
+              tag: String(p.tag ?? "Studio"),
+              published: Boolean(p.published ?? true),
+              createdAt: String(p.created_at ?? new Date().toISOString()),
+            }))
+          );
         }
         setIsAdmin(Boolean(sess.data.session));
         setRecovery(Boolean((sess.data.session as { recovery?: boolean } | null)?.recovery));
@@ -430,6 +498,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           guests: Number(row.guests ?? 1),
           notes: String(row.notes ?? ""),
           status: (row.status as BookingStatus) ?? "pending",
+          depositPaid: Boolean(row.deposit_paid),
           createdAt: String(row.created_at ?? new Date().toISOString()),
         };
         let fresh = false;
@@ -506,6 +575,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [content, toast]);
+  useEffect(() => {
+    if (cloud) return;
+    try {
+      localStorage.setItem(LS_DELIVERIES, JSON.stringify(deliveries));
+      localStorage.setItem(LS_POSTS, JSON.stringify(posts));
+    } catch {
+      if (!warnedQuota.current) {
+        warnedQuota.current = true;
+        toast("Browser storage is full — galleries & posts may not persist after reload.", "err");
+      }
+    }
+  }, [deliveries, posts, toast]);
 
   /* ————— cloud write-through helper ————— */
   const remote = useCallback(
@@ -687,6 +768,115 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [remote]
   );
 
+  /* ————— client delivery galleries ————— */
+  const deliveryToRow = (d: Delivery) => ({
+    id: d.id,
+    title: d.title,
+    client_name: d.clientName,
+    client_email: d.clientEmail,
+    pass_hash: d.passHash,
+    photos: d.photos,
+    downloads: d.downloads,
+    published: d.published,
+  });
+  const rowToDelivery = (r: Record<string, unknown>): Delivery => ({
+    id: String(r.id),
+    title: String(r.title ?? ""),
+    clientName: String(r.client_name ?? ""),
+    clientEmail: String(r.client_email ?? ""),
+    passHash: String(r.pass_hash ?? ""),
+    photos: (r.photos as DeliveryPhoto[]) ?? [],
+    downloads: Boolean(r.downloads ?? true),
+    published: Boolean(r.published ?? true),
+    createdAt: String(r.created_at ?? new Date().toISOString()),
+  });
+
+  const addDelivery = useCallback(
+    (d: Omit<Delivery, "id" | "createdAt">) => {
+      const full: Delivery = { ...d, id: uid(), createdAt: new Date().toISOString() };
+      setDeliveries((prev) => [full, ...prev]);
+      void remote(() => supabase!.from("deliveries").upsert(deliveryToRow(full)));
+    },
+    [remote]
+  );
+  const updateDelivery = useCallback(
+    (id: string, d: Omit<Delivery, "id" | "createdAt">) => {
+      setDeliveries((prev) => {
+        const next = prev.map((x) => (x.id === id ? { ...x, ...d } : x));
+        const upd = next.find((x) => x.id === id);
+        if (upd) void remote(() => supabase!.from("deliveries").upsert(deliveryToRow(upd)));
+        return next;
+      });
+    },
+    [remote]
+  );
+  const removeDelivery = useCallback(
+    (id: string) => {
+      setDeliveries((prev) => prev.filter((x) => x.id !== id));
+      void remote(() => supabase!.from("deliveries").delete().eq("id", id));
+    },
+    [remote]
+  );
+  const toggleDelivery = useCallback(
+    (id: string) => {
+      setDeliveries((prev) => {
+        const next = prev.map((x) => (x.id === id ? { ...x, published: !x.published } : x));
+        const upd = next.find((x) => x.id === id);
+        if (upd) void remote(() => supabase!.from("deliveries").update({ published: upd.published }).eq("id", id));
+        return next;
+      });
+    },
+    [remote]
+  );
+
+  /* ————— journal posts ————— */
+  const addPost = useCallback(
+    (p: Omit<Post, "id" | "createdAt">) => {
+      const full: Post = { ...p, id: uid(), createdAt: new Date().toISOString() };
+      setPosts((prev) => [full, ...prev]);
+      void remote(() => supabase!.from("posts").upsert(full));
+    },
+    [remote]
+  );
+  const updatePost = useCallback(
+    (id: string, p: Omit<Post, "id" | "createdAt">) => {
+      setPosts((prev) => {
+        const next = prev.map((x) => (x.id === id ? { ...x, ...p } : x));
+        const upd = next.find((x) => x.id === id);
+        if (upd) void remote(() => supabase!.from("posts").upsert(upd));
+        return next;
+      });
+    },
+    [remote]
+  );
+  const removePost = useCallback(
+    (id: string) => {
+      setPosts((prev) => prev.filter((x) => x.id !== id));
+      void remote(() => supabase!.from("posts").delete().eq("id", id));
+    },
+    [remote]
+  );
+  const togglePost = useCallback(
+    (id: string) => {
+      setPosts((prev) => {
+        const next = prev.map((x) => (x.id === id ? { ...x, published: !x.published } : x));
+        const upd = next.find((x) => x.id === id);
+        if (upd) void remote(() => supabase!.from("posts").update({ published: upd.published }).eq("id", id));
+        return next;
+      });
+    },
+    [remote]
+  );
+
+  /* ————— deposit tracking ————— */
+  const setBookingDeposit = useCallback(
+    (id: string, paid: boolean) => {
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, depositPaid: paid } : b)));
+      void remote(() => supabase!.from("bookings").update({ deposit_paid: paid }).eq("id", id));
+    },
+    [remote]
+  );
+
   /* ————— auth ————— */
   const login = useCallback(async (u: string, p: string): Promise<string | null> => {
     if (cloud && supabase) {
@@ -790,11 +980,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       unseenCount,
       markSeen,
       requestNotifyPermission,
+      deliveries,
+      addDelivery,
+      updateDelivery,
+      removeDelivery,
+      toggleDelivery,
+      posts,
+      addPost,
+      updatePost,
+      removePost,
+      togglePost,
+      setBookingDeposit,
       logout,
       toast,
       setPrefill,
     }),
-    [bookings, reviews, team, frames, isAdmin, ready, syncError, sitePhotos, content, recovery, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, setSitePhoto, updateContent, login, requestReset, setNewPassword, changePassword, unseenCount, markSeen, requestNotifyPermission, logout, toast]
+    [bookings, reviews, team, frames, isAdmin, ready, syncError, sitePhotos, content, recovery, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, setSitePhoto, updateContent, login, requestReset, setNewPassword, changePassword, unseenCount, markSeen, requestNotifyPermission, deliveries, addDelivery, updateDelivery, removeDelivery, toggleDelivery, posts, addPost, updatePost, removePost, togglePost, setBookingDeposit, logout, toast]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
