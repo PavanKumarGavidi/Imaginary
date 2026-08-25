@@ -48,6 +48,8 @@ export default function BookingSection() {
   const [checkingSlots, setCheckingSlots] = useState(false);
   /* when set, the on-site deposit payment panel is open */
   const [depositOpen, setDepositOpen] = useState(false);
+  /* shown when the booking couldn't be saved to the studio ledger */
+  const [saveErr, setSaveErr] = useState("");
 
   /* Open the on-site Stripe payment panel for the 30% deposit. */
   const startCheckout = (ref: string) => {
@@ -116,6 +118,7 @@ export default function BookingSection() {
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm((f) => ({ ...f, [k]: e.target.value }));
     setErrors((er) => ({ ...er, [k]: undefined }));
+    setSaveErr("");
   };
 
   const validate = (): boolean => {
@@ -159,7 +162,7 @@ export default function BookingSection() {
         return;
       }
 
-      const b = addBooking({
+      const { booking: b, error: saveError } = await addBooking({
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
@@ -170,6 +173,19 @@ export default function BookingSection() {
         guests: Number(form.guests),
         notes: form.notes.trim(),
       });
+
+      /* the booking MUST reach the studio ledger before we celebrate */
+      if (cloud && saveError) {
+        setSending(false);
+        setSaveErr(
+          /row-level security/i.test(saveError)
+            ? `The studio database refused the booking (security policy): “${saveError}”. The desk needs to re-apply the bookings insert policy — please call or email us and we'll take your booking by hand.`
+            : `Your booking couldn't be saved to the studio ledger: “${saveError}”. Nothing was charged and no slot was held — please try again, or contact the desk if this repeats.`
+        );
+        toast("Booking failed to save — see the note on the form.", "err");
+        return;
+      }
+      setSaveErr("");
       setSubmitted(b);
       setSending(false);
       toast(`Request ${b.ref} received — confirmation within 24h.`);
@@ -348,6 +364,12 @@ export default function BookingSection() {
               </div>
             ) : (
               <form onSubmit={onSubmit} noValidate className="border border-[var(--line)] bg-[var(--panel)] p-8 md:p-10">
+                {saveErr && (
+                  <div className="shake mb-6 border-l-2 border-[var(--ember)] bg-[rgba(208,91,69,0.07)] p-4">
+                    <div className="font-mono text-[10px] tracking-[0.24em] uppercase text-[var(--ember)]">Booking not saved</div>
+                    <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink)]">{saveErr}</p>
+                  </div>
+                )}
                 <div className="mb-8 flex items-center justify-between">
                   <h3 className="font-display text-2xl tracking-wide uppercase">Booking request</h3>
                   <span className="font-mono text-[10px] tracking-[0.22em] text-[var(--dim)]">FORM 26-B</span>

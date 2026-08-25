@@ -223,6 +223,12 @@ export default function DepositModal({ booking, pkg, onClose }: { booking: Booki
               {message && stage === "error" && (
                 <div className="mt-4 border border-[var(--ember)]/50 bg-[rgba(208,91,69,0.07)] px-4 py-3 text-sm text-[var(--ember)]">
                   {message}
+                  {/wasn't found in the ledger/i.test(message) && (
+                    <span className="mt-2 block text-[var(--muted)]">
+                      This usually means the booking didn't sync to the studio. Close this panel and submit the booking form
+                      again — you'll now see a clear note if the save fails.
+                    </span>
+                  )}
                 </div>
               )}
 

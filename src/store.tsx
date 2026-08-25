@@ -239,7 +239,10 @@ interface Store {
   markSeen: () => void;
   /** Ask the browser for OS-notification permission (used for new-booking alerts). */
   requestNotifyPermission: () => void;
-  addBooking: (b: Omit<Booking, "id" | "ref" | "status" | "createdAt">) => Booking;
+  /** Creates the booking. In cloud mode the DB insert is awaited — `error` is non-null if the ledger rejected it. */
+  addBooking: (
+    b: Omit<Booking, "id" | "ref" | "status" | "createdAt">
+  ) => Promise<{ booking: Booking; error: string | null }>;
   setBookingStatus: (id: string, s: BookingStatus) => void;
   removeBooking: (id: string) => void;
   addReview: (r: Omit<Review, "id">) => void;
@@ -728,13 +731,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   /* ————— bookings ————— */
   const addBooking = useCallback(
-    (b: Omit<Booking, "id" | "ref" | "status" | "createdAt">) => {
+    async (b: Omit<Booking, "id" | "ref" | "status" | "createdAt">): Promise<{ booking: Booking; error: string | null }> => {
       const booking: Booking = { ...b, id: uid(), ref: makeRef(), status: "pending", createdAt: new Date().toISOString() };
       setBookings((prev) => [booking, ...prev]);
-      void remote(() => supabase!.from("bookings").insert(bookingToRow(booking)));
-      return booking;
+      if (cloud && supabase) {
+        try {
+          const { error } = await supabase.from("bookings").insert(bookingToRow(booking));
+          if (error) {
+            setSyncError(error.message);
+            return { booking, error: error.message };
+          }
+          setSyncError(null);
+        } catch (e) {
+          return { booking, error: (e as Error).message ?? "Network error while saving the booking." };
+        }
+      }
+      return { booking, error: null };
     },
-    [remote]
+    [cloud]
   );
 
   const setBookingStatus = useCallback(
