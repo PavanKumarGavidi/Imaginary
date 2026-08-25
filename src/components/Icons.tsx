@@ -252,3 +252,10 @@ export const IconBack = (p: P) => (
     <path d="M20 12H4M11 5l-7 7 7 7" />
   </S>
 );
+
+export const IconLock = (p: P) => (
+  <S {...p}>
+    <rect x="5" y="10.5" width="14" height="10" rx="1.5" />
+    <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3M12 14.5v2.5" />
+  </S>
+);

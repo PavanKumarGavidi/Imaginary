@@ -11,7 +11,7 @@ const STATUS_META: { id: string; label: string; color: string }[] = [
 
 /** Hand-rolled SVG/CSS analytics for the Bookings tab — no chart library needed. */
 export default function Insights() {
-  const { bookings, content } = useStore();
+  const { bookings, content, payments } = useStore();
   const { ref, inView } = useInView<HTMLDivElement>(0.2);
 
   const months = useMemo(() => {
@@ -70,8 +70,9 @@ export default function Insights() {
     });
     const busiest = weekdays[tally.indexOf(Math.max(...tally))];
     const deposits = bookings.filter((b) => b.depositPaid).length;
-    return { total, conversion: total ? Math.round((won / total) * 100) : 0, avgLead, busiest, deposits };
-  }, [bookings]);
+    const collected = payments.reduce((sum, p) => sum + (Number(p.amountCents) || 0), 0);
+    return { total, conversion: total ? Math.round((won / total) * 100) : 0, avgLead, busiest, deposits, collected };
+  }, [bookings, payments]);
 
   return (
     <div ref={ref} className="panel mt-6 p-6">
@@ -86,6 +87,7 @@ export default function Insights() {
             { k: "Avg lead time", v: `${quick.avgLead}d` },
             { k: "Busiest day", v: quick.busiest },
             { k: "Deposits paid", v: String(quick.deposits) },
+            { k: "Collected", v: `$${(quick.collected / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}` },
           ].map((s) => (
             <div key={s.k} className="border border-[var(--line-soft)] bg-[var(--bg2)] px-3.5 py-2 text-center">
               <div className="font-display text-xl leading-none text-[var(--amber)]">{s.v}</div>
