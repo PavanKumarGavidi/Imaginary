@@ -5,8 +5,9 @@ import type { Booking as BookingType } from "../store";
 import { useStore } from "../store";
 import { supabase } from "../lib/supabase";
 import { emailNotificationsEnabled, sendBookingEmails } from "../lib/notify";
+import { stripeUrl } from "../lib/util";
 import { Reveal } from "./ui";
-import { IconAperture, IconArrow, IconCalendar, IconClock, IconLock, IconMail, IconPhone, IconPin, IconUsers } from "./Icons";
+import { IconAperture, IconArrow, IconCalendar, IconClock, IconMail, IconPhone, IconPin, IconUsers } from "./Icons";
 
 const fmtDate = (d: string) =>
   new Date(`${d}T00:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
@@ -36,7 +37,7 @@ const EMPTY: FormState = {
 };
 
 export default function BookingSection() {
-  const { addBooking, prefill, toast, content, bookings, cloud, createCheckout } = useStore();
+  const { addBooking, prefill, toast, content, bookings, cloud } = useStore();
   const ct = content.contact;
   const pkgById = (id: string) => content.packages.find((p) => p.id === id);
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -45,25 +46,6 @@ export default function BookingSection() {
   const [sending, setSending] = useState(false);
   const [takenMap, setTakenMap] = useState<Record<string, string[]>>({});
   const [checkingSlots, setCheckingSlots] = useState(false);
-  const [paying, setPaying] = useState(false);
-
-  /* Kick off a Stripe Checkout session for the 30% deposit. */
-  const startCheckout = async (ref: string) => {
-    if (paying) return;
-    setPaying(true);
-    const origin = window.location.origin + window.location.pathname;
-    const url = await createCheckout(
-      ref,
-      `${origin}#/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      `${origin}#book`
-    );
-    setPaying(false);
-    if (url) {
-      window.location.assign(url);
-    } else {
-      toast("Couldn't open secure checkout. We'll email you a payment link instead.", "err");
-    }
-  };
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -295,24 +277,19 @@ export default function BookingSection() {
 
                 {(() => {
                   const p = pkgById(submitted.packageId);
-                  if (!p || p.price <= 0) return null;
+                  if (!p?.stripeLink) return null;
                   const deposit = Math.round(p.price * 0.3);
                   return (
-                    <div className="mt-6 border border-[var(--sage)]/40 bg-[rgba(47,138,99,0.06)] p-5">
-                      <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
-                        <div>
-                          <div className="font-display text-xl text-[var(--ink)]">Skip the wait — lock it now.</div>
-                          <p className="mt-0.5 text-xs leading-relaxed text-[var(--muted)]">
-                            Pay the 30% deposit (${deposit}) and your date is confirmed the moment it clears. Otherwise we confirm within 24h.
-                          </p>
-                        </div>
-                        <button onClick={() => void startCheckout(submitted.ref)} disabled={paying} className="btn-solid shrink-0 disabled:cursor-wait disabled:opacity-60">
-                          {paying ? "Opening secure checkout…" : <>Pay ${deposit} deposit <IconArrow width={15} height={15} /></>}
-                        </button>
+                    <div className="mt-6 flex flex-col items-center gap-4 border border-[var(--sage)]/40 bg-[rgba(47,138,99,0.06)] p-5 text-center sm:flex-row sm:justify-between sm:text-left">
+                      <div>
+                        <div className="font-display text-xl text-[var(--ink)]">Skip the wait — lock it now.</div>
+                        <p className="mt-0.5 text-xs leading-relaxed text-[var(--muted)]">
+                          Pay the 30% deposit (${deposit}) and your date is confirmed the moment it clears. Otherwise we confirm within 24h.
+                        </p>
                       </div>
-                      <p className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)] sm:justify-start">
-                        <IconLock width={11} height={11} className="text-[var(--sage)]" /> Secure checkout by Stripe · card, Apple Pay, Google Pay
-                      </p>
+                      <a href={stripeUrl(p.stripeLink, submitted.email, submitted.ref)} target="_blank" rel="noopener noreferrer" className="btn-solid shrink-0">
+                        Pay ${deposit} deposit <IconArrow width={15} height={15} />
+                      </a>
                     </div>
                   );
                 })()}

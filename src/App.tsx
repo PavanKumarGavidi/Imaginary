@@ -12,12 +12,11 @@ import Footer from "./components/Footer";
 import { Dashboard, LoginPage } from "./components/Admin";
 import { JournalListPage, JournalPostPage } from "./components/Journal";
 import DeliveryPage from "./components/Delivery";
-import PaymentSuccess from "./components/PaymentSuccess";
 import QuickDock from "./components/QuickDock";
 import { IconAperture } from "./components/Icons";
 import { Toasts } from "./components/ui";
 
-type View = "site" | "login" | "admin" | "journal" | "post" | "delivery" | "payment";
+type View = "site" | "login" | "admin" | "journal" | "post" | "delivery";
 
 interface Route {
   view: View;
@@ -30,7 +29,6 @@ const routeFromHash = (): Route => {
   const h = window.location.hash;
   if (h.startsWith("#/desk")) return { view: "admin", param: null };
   if (h.startsWith("#/staff") || h.startsWith("#/login")) return { view: "login", param: null };
-  if (h.startsWith("#/payment")) return { view: "payment", param: null };
   if (h.startsWith("#/journal/")) return { view: "post", param: decodeURIComponent(h.slice("#/journal/".length)) };
   if (h.startsWith("#/journal")) return { view: "journal", param: null };
   if (h.startsWith("#/delivery/")) return { view: "delivery", param: decodeURIComponent(h.slice("#/delivery/".length)) };
@@ -182,7 +180,6 @@ function Shell() {
       {view === "journal" && <JournalListPage />}
       {view === "post" && <JournalPostPage slug={param ?? ""} />}
       {view === "delivery" && <DeliveryPage id={param ?? ""} />}
-      {view === "payment" && <PaymentSuccess />}
     </div>
   );
 }
