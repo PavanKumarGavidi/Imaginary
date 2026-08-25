@@ -229,7 +229,9 @@ interface Store {
   /** Confirmed Stripe deposits (written by the webhook). */
   payments: Payment[];
   /** Ask the create-payment-intent Edge Function for a Stripe client secret (on-site payment panel). */
-  createPaymentIntent: (bookingRef: string) => Promise<{ clientSecret: string; amountCents: number } | null>;
+  createPaymentIntent: (
+    bookingRef: string
+  ) => Promise<{ ok: true; clientSecret: string; amountCents: number; currency: string } | { ok: false; message: string }>;
   /** Change the signed-in admin's password. Returns an error message, or null on success. */
   changePassword: (current: string, next: string) => Promise<string | null>;
   /** Pending bookings that landed since the admin last viewed the ledger. */
