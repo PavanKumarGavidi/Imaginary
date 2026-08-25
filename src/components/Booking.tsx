@@ -5,6 +5,7 @@ import type { Booking as BookingType } from "../store";
 import { useStore } from "../store";
 import { supabase } from "../lib/supabase";
 import { emailNotificationsEnabled, sendBookingEmails } from "../lib/notify";
+import DepositModal from "./DepositModal";
 import { Reveal } from "./ui";
 import { IconAperture, IconArrow, IconCalendar, IconClock, IconLock, IconMail, IconPhone, IconPin, IconUsers } from "./Icons";
 
@@ -36,7 +37,7 @@ const EMPTY: FormState = {
 };
 
 export default function BookingSection() {
-  const { addBooking, prefill, toast, content, bookings, cloud, createCheckout } = useStore();
+  const { addBooking, prefill, toast, content, bookings, cloud } = useStore();
   const ct = content.contact;
   const pkgById = (id: string) => content.packages.find((p) => p.id === id);
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -45,25 +46,13 @@ export default function BookingSection() {
   const [sending, setSending] = useState(false);
   const [takenMap, setTakenMap] = useState<Record<string, string[]>>({});
   const [checkingSlots, setCheckingSlots] = useState(false);
-  const [paying, setPaying] = useState(false);
+  /* when set, the on-site deposit payment panel is open */
+  const [depositOpen, setDepositOpen] = useState(false);
 
-  /* Open a Stripe Checkout session for the 30% deposit. */
-  const startCheckout = async (ref: string) => {
-    if (paying) return;
-    setPaying(true);
+  /* Open the on-site Stripe payment panel for the 30% deposit. */
+  const startCheckout = (ref: string) => {
     sessionStorage.setItem("imagine_last_booking_ref", ref);
-    const origin = window.location.origin + window.location.pathname;
-    const url = await createCheckout(
-      ref,
-      `${origin}#/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      `${origin}#/payment/canceled`
-    );
-    setPaying(false);
-    if (url) {
-      window.location.assign(url);
-    } else {
-      toast("Secure checkout isn't ready yet — we'll email you a payment link instead.", "err");
-    }
+    setDepositOpen(true);
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -307,12 +296,12 @@ export default function BookingSection() {
                             Pay the 30% deposit (${deposit}) and your date is confirmed the moment it clears. Otherwise we confirm within 24h.
                           </p>
                         </div>
-                        <button onClick={() => void startCheckout(submitted.ref)} disabled={paying} className="btn-solid shrink-0 disabled:cursor-wait disabled:opacity-60">
-                          {paying ? "Opening secure checkout…" : <>Pay ${deposit} deposit <IconArrow width={15} height={15} /></>}
+                        <button onClick={() => startCheckout(submitted.ref)} className="btn-solid shrink-0">
+                          Pay ${deposit} deposit <IconArrow width={15} height={15} />
                         </button>
                       </div>
                       <p className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)] sm:justify-start">
-                        <IconLock width={11} height={11} className="text-[var(--sage)]" /> Secure checkout by Stripe · card, Apple Pay, Google Pay
+                        <IconLock width={11} height={11} className="text-[var(--sage)]" /> Pay right here — secure Stripe card form, no redirect
                       </p>
                     </div>
                   );
@@ -350,6 +339,12 @@ export default function BookingSection() {
                   </button>
                   <a href="#top" className="btn-ghost">Back to top</a>
                 </div>
+
+                {depositOpen && (() => {
+                  const p = pkgById(submitted.packageId);
+                  if (!p || p.price <= 0) return null;
+                  return <DepositModal booking={submitted} pkg={p} onClose={() => setDepositOpen(false)} />;
+                })()}
               </div>
             ) : (
               <form onSubmit={onSubmit} noValidate className="border border-[var(--line)] bg-[var(--panel)] p-8 md:p-10">

@@ -228,8 +228,8 @@ interface Store {
   setBookingDeposit: (id: string, paid: boolean) => void;
   /** Confirmed Stripe deposits (written by the webhook). */
   payments: Payment[];
-  /** Ask the create-checkout Edge Function for a Stripe Checkout URL. Null when unavailable. */
-  createCheckout: (bookingRef: string, successUrl: string, cancelUrl: string) => Promise<string | null>;
+  /** Ask the create-payment-intent Edge Function for a Stripe client secret (on-site payment panel). */
+  createPaymentIntent: (bookingRef: string) => Promise<{ clientSecret: string; amountCents: number } | null>;
   /** Change the signed-in admin's password. Returns an error message, or null on success. */
   changePassword: (current: string, next: string) => Promise<string | null>;
   /** Pending bookings that landed since the admin last viewed the ledger. */
@@ -998,17 +998,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [remote]
   );
 
-  /* ————— Stripe Checkout ————— */
-  const createCheckout = useCallback(
-    async (bookingRef: string, successUrl: string, cancelUrl: string): Promise<string | null> => {
+  /* ————— Stripe — on-site deposit payment panel ————— */
+  const createPaymentIntent = useCallback(
+    async (bookingRef: string): Promise<{ clientSecret: string; amountCents: number } | null> => {
       if (!cloud || !supabase) return null;
       try {
-        const { data, error } = await supabase.functions.invoke("create-checkout", {
-          body: { booking_ref: bookingRef, success_url: successUrl, cancel_url: cancelUrl },
+        const { data, error } = await supabase.functions.invoke("create-payment-intent", {
+          body: { booking_ref: bookingRef },
         });
         if (error) throw error;
-        const url = (data as { url?: string } | null)?.url;
-        return url && typeof url === "string" ? url : null;
+        const d = data as { client_secret?: string; amount_cents?: number } | null;
+        return d?.client_secret ? { clientSecret: d.client_secret, amountCents: d.amount_cents ?? 0 } : null;
       } catch {
         return null;
       }
@@ -1131,12 +1131,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       togglePost,
       setBookingDeposit,
       payments,
-      createCheckout,
+      createPaymentIntent,
       logout,
       toast,
       setPrefill,
     }),
-    [bookings, reviews, team, frames, isAdmin, ready, syncError, sitePhotos, content, recovery, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, setSitePhoto, updateContent, login, requestReset, setNewPassword, changePassword, unseenCount, markSeen, requestNotifyPermission, deliveries, addDelivery, updateDelivery, removeDelivery, toggleDelivery, posts, addPost, updatePost, removePost, togglePost, setBookingDeposit, payments, createCheckout, logout, toast]
+    [bookings, reviews, team, frames, isAdmin, ready, syncError, sitePhotos, content, recovery, toasts, prefill, addBooking, setBookingStatus, removeBooking, addReview, updateReview, removeReview, toggleReview, addMember, updateMember, removeMember, toggleMember, addFrame, updateFrame, removeFrame, toggleFrame, setSitePhoto, updateContent, login, requestReset, setNewPassword, changePassword, unseenCount, markSeen, requestNotifyPermission, deliveries, addDelivery, updateDelivery, removeDelivery, toggleDelivery, posts, addPost, updatePost, removePost, togglePost, setBookingDeposit, payments, createPaymentIntent, logout, toast]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

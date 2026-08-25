@@ -173,46 +173,53 @@ expose to anonymous visitors.
 SQL Editor. It adds `deposit_paid` to bookings plus the `deliveries` and `posts`
 tables, their RLS policies, and a starter journal post.
 
-### 💳 Full Stripe Checkout — automatic 30% deposits
+### 💳 On-site Stripe payments — pay without leaving the website
 
-The deposit amount is computed **server-side** from each package's price, so
-clients can never tamper with it, and the deposit is confirmed **automatically**
-the moment the payment clears (no manual toggling).
+The client books → success screen shows **"Pay $X deposit"** → clicking it opens
+an elegant payment panel **on the same page** (Stripe's secure card form + wallets,
+styled to match Imagine). No redirect to a Stripe-hosted page. The deposit amount
+is computed **server-side** from the package price (tamper-proof), and the deposit
+is confirmed **automatically** the moment the payment clears.
 
 **One-time SQL:** run `supabase/migrations/payments.sql` (creates the staff-only
 `payments` ledger). Already included in `schema.sql` for fresh installs.
 
 **Setup (Stripe + Supabase Edge Functions, ~10 minutes):**
 
-1. **Stripe** → Developers → API Keys → copy your **secret key** (`sk_test_…` to
-   start; switch to `sk_live_…` for real money).
-2. **Supabase → Edge Functions → New function** → name it `create-checkout` →
-   paste `supabase/functions/create-checkout/index.ts` → Deploy. Turn **OFF**
-   "Verify JWT" on its page.
-3. Repeat for `stripe-webhook` using `supabase/functions/stripe-webhook/index.ts`,
+1. **Stripe** → Developers → API Keys → copy **both**:
+   - **Publishable key** (`pk_test_…`) — safe for the browser
+   - **Secret key** (`sk_test_…`) — server-side only
+2. **`.env.local`** (and Netlify env vars) → add:
+   - `VITE_STRIPE_PUBLISHABLE_KEY=pk_test_…`
+3. **Supabase → Edge Functions → New function** → name it `create-payment-intent`
+   → paste `supabase/functions/create-payment-intent/index.ts` → Deploy. Turn
+   **OFF** "Verify JWT" on its page.
+4. Repeat for `stripe-webhook` using `supabase/functions/stripe-webhook/index.ts`,
    also with "Verify JWT" **OFF**.
-4. **Edge Functions → Secrets** → add:
+5. **Edge Functions → Secrets** → add:
    - `STRIPE_SECRET_KEY` = your secret key (both functions)
-   - `STRIPE_WEBHOOK_SECRET` = the signing secret from step 5 (webhook only)
-5. **Stripe → Developers → Webhooks → Add endpoint** → paste
+   - `STRIPE_WEBHOOK_SECRET` = the signing secret from step 6 (webhook only)
+6. **Stripe → Developers → Webhooks → Add endpoint** → paste
    `https://<your-project-ref>.supabase.co/functions/v1/stripe-webhook` →
-   event `checkout.session.completed` → copy the **Signing secret** (`whsec_…`).
+   events `payment_intent.succeeded` **and** `checkout.session.completed` →
+   copy the **Signing secret** (`whsec_…`).
 
 **How it works:**
 
 - Client books → success screen shows **"Pay $X deposit"** (30% of the package).
-- Clicking it opens **Stripe Checkout** (card / Apple Pay / Google Pay).
-- On success, Stripe redirects to `#/payment/success` → a "Payment received"
-  page shows the reference and confirms the deposit.
+- Clicking it opens the **on-site payment panel** with the Stripe card form.
+- On success (no redirect for most cards), the panel flips to **"Payment received"**.
+  If the bank requires 3-D Secure, Stripe briefly redirects back to `#/payment/success`.
 - The **stripe-webhook** function flips `deposit_paid` and writes to `payments`,
   so the desk's Bookings tab shows **Paid ✓** and Insights shows **Collected $** —
   all automatically, in real time.
 
-Test end-to-end with `sk_test_` keys and card `4242 4242 4242 4242` (any future
-date, any CVC). Stripe fees (2.9% + 30¢) apply only when you actually get paid.
+Test end-to-end with `pk_test_` / `sk_test_` keys and card `4242 4242 4242 4242`
+(any future date, any CVC). Stripe fees (2.9% + 30¢) apply only when you actually
+get paid. For real money, swap to `pk_live_` / `sk_live_` keys — no code changes.
 
 > Legacy: the old per-package *Stripe Payment Link* field still works as a manual
-> fallback ("Copy pay link" in the desk), but the Checkout flow above is automatic.
+> fallback ("Copy pay link" in the desk), but the on-site flow above is automatic.
 
 ### 🔒 Client delivery galleries
 
