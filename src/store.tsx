@@ -182,6 +182,16 @@ export interface ToastMsg {
   tone: "ok" | "err";
 }
 
+/** A confirmed Stripe deposit — written automatically by the stripe-webhook Edge Function. */
+export interface Payment {
+  id: string;
+  bookingRef: string;
+  amountCents: number;
+  currency: string;
+  stripeSessionId: string;
+  createdAt: string;
+}
+
 export interface Prefill {
   session?: string;
   packageId?: string;
@@ -216,6 +226,10 @@ interface Store {
   togglePost: (id: string) => void;
   /** Flip a booking's deposit flag (Stripe payment reconciliation). */
   setBookingDeposit: (id: string, paid: boolean) => void;
+  /** Confirmed Stripe deposits (written by the webhook). */
+  payments: Payment[];
+  /** Ask the create-checkout Edge Function for a Stripe Checkout URL. Null when unavailable. */
+  createCheckout: (bookingRef: string, successUrl: string, cancelUrl: string) => Promise<string | null>;
   /** Change the signed-in admin's password. Returns an error message, or null on success. */
   changePassword: (current: string, next: string) => Promise<string | null>;
   /** Pending bookings that landed since the admin last viewed the ledger. */
@@ -332,6 +346,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [content, setContentState] = useState<SiteContent>(() => ({ ...DEFAULT_SITE_CONTENT, ...load(LS_CONTENT, {} as Partial<SiteContent>) }));
   const [deliveries, setDeliveries] = useState<Delivery[]>(() => load(LS_DELIVERIES, [] as Delivery[]));
   const [posts, setPosts] = useState<Post[]>(() => load(LS_POSTS, [] as Post[]));
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [isAdmin, setIsAdmin] = useState<boolean>(() => (cloud ? false : load(LS_ADMIN, false)));
   const [ready, setReady] = useState(!cloud);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -460,6 +475,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               body: String(p.body ?? ""),
               tag: String(p.tag ?? "Studio"),
               published: Boolean(p.published ?? true),
+              createdAt: String(p.created_at ?? new Date().toISOString()),
+            }))
+          );
+        }
+        /* payments ledger — staff-only table; anon fetch fails softly and stays empty */
+        if (Array.isArray(pay.data) && pay.data.length) {
+          setPayments(
+            (pay.data as Record<string, unknown>[]).map((p) => ({
+              id: String(p.id),
+              bookingRef: String(p.booking_ref ?? ""),
+              amountCents: Number(p.amount_cents ?? 0),
+              currency: String(p.currency ?? "usd"),
+              stripeSessionId: String(p.stripe_session_id ?? ""),
               createdAt: String(p.created_at ?? new Date().toISOString()),
             }))
           );
