@@ -8,7 +8,13 @@ import { IconAperture, IconArrow, IconCheck, IconX } from "./Icons";
 
 type Stage = "loading" | "ready" | "processing" | "success" | "error";
 
-const fmt = (cents: number) => `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fmt = (cents: number, currency = "usd") => {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(cents / 100);
+  } catch {
+    return `$${(cents / 100).toFixed(2)}`;
+  }
+};
 const fmtDate = (iso: string) => {
   const d = new Date(`${iso}T12:00:00`);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
@@ -22,6 +28,7 @@ export default function DepositModal({ booking, pkg, onClose }: { booking: Booki
   const { createPaymentIntent, toast } = useStore();
   const [stage, setStage] = useState<Stage>("loading");
   const [amount, setAmount] = useState(() => Math.round(pkg.price * 0.3 * 100));
+  const [currency, setCurrency] = useState("usd");
   const [message, setMessage] = useState("");
   const mountRef = useRef<HTMLDivElement>(null);
   const elementsRef = useRef<StripeElements | null>(null);
@@ -32,14 +39,15 @@ export default function DepositModal({ booking, pkg, onClose }: { booking: Booki
   useEffect(() => {
     let alive = true;
     (async () => {
-      const intent = await createPaymentIntent(booking.ref);
+      const res = await createPaymentIntent(booking.ref);
       if (!alive) return;
-      if (!intent) {
-        setMessage("We couldn't reach the payment desk. Please try again in a moment.");
+      if (!res.ok) {
+        setMessage(res.message);
         setStage("error");
         return;
       }
-      setAmount(intent.amountCents);
+      setAmount(res.amountCents);
+      setCurrency(res.currency);
 
       const stripe = await getStripe();
       if (!alive) return;
@@ -49,7 +57,7 @@ export default function DepositModal({ booking, pkg, onClose }: { booking: Booki
         return;
       }
 
-      const elements = stripe.elements({ clientSecret: intent.clientSecret, appearance: elementAppearance, loader: "auto" });
+      const elements = stripe.elements({ clientSecret: res.clientSecret, appearance: elementAppearance, loader: "auto" });
       const el = elements.create("payment");
       elementsRef.current = elements;
       paymentElRef.current = el;
@@ -163,10 +171,10 @@ export default function DepositModal({ booking, pkg, onClose }: { booking: Booki
           <div className="relative mt-4 flex items-end justify-between border-t border-[rgba(242,249,254,0.15)] pt-3.5">
             <div>
               <div className="font-mono text-[9px] tracking-[0.24em] uppercase text-[rgba(242,249,254,0.6)]">30% deposit due today</div>
-              <div className="font-display text-4xl leading-tight text-[#8fd0f7]">{fmt(amount)}</div>
+              <div className="font-display text-4xl leading-tight text-[#8fd0f7]">{fmt(amount, currency)}</div>
             </div>
             <div className="pb-1 text-right font-mono text-[9px] leading-relaxed tracking-[0.18em] uppercase text-[rgba(242,249,254,0.5)]">
-              Balance {fmt(Math.round(pkg.price * 100) - amount)}<br />due 48h before the session
+              Balance {fmt(Math.round(pkg.price * 100) - amount, currency)}<br />due 48h before the session
             </div>
           </div>
         </div>
@@ -180,7 +188,7 @@ export default function DepositModal({ booking, pkg, onClose }: { booking: Booki
               </div>
               <h3 className="font-display mt-5 text-3xl text-[var(--ink)]">Payment received.</h3>
               <p className="mt-2 max-w-sm text-sm leading-relaxed text-[var(--muted)]">
-                <span className="font-semibold text-[var(--ink)]">{fmt(amount)}</span> is on its way to the studio and{" "}
+                <span className="font-semibold text-[var(--ink)]">{fmt(amount, currency)}</span> is on its way to the studio and{" "}
                 <span className="font-semibold text-[var(--ink)]">{booking.ref}</span> is now locked in. A receipt is in
                 your inbox — we'll see you on set.
               </p>
@@ -229,7 +237,7 @@ export default function DepositModal({ booking, pkg, onClose }: { booking: Booki
                   </>
                 ) : (
                   <>
-                    Pay {fmt(amount)} deposit <IconArrow width={15} height={15} />
+                    Pay {fmt(amount, currency)} deposit <IconArrow width={15} height={15} />
                   </>
                 )}
               </button>

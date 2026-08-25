@@ -1002,17 +1002,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   /* ————— Stripe — on-site deposit payment panel ————— */
   const createPaymentIntent = useCallback(
-    async (bookingRef: string): Promise<{ clientSecret: string; amountCents: number } | null> => {
-      if (!cloud || !supabase) return null;
+    async (
+      bookingRef: string
+    ): Promise<{ ok: true; clientSecret: string; amountCents: number; currency: string } | { ok: false; message: string }> => {
+      if (!cloud || !supabase)
+        return { ok: false, message: "Cloud mode isn't configured, so payments can't run here." };
       try {
         const { data, error } = await supabase.functions.invoke("create-payment-intent", {
           body: { booking_ref: bookingRef },
         });
-        if (error) throw error;
-        const d = data as { client_secret?: string; amount_cents?: number } | null;
-        return d?.client_secret ? { clientSecret: d.client_secret, amountCents: d.amount_cents ?? 0 } : null;
-      } catch {
-        return null;
+        if (error) {
+          /* FunctionsHttpError carries the function's JSON body in context */
+          const ctx = (error as { context?: { error?: string } }).context;
+          return { ok: false, message: ctx?.error ?? `Payment service error: ${error.message}` };
+        }
+        const d = data as { ok?: boolean; client_secret?: string; amount_cents?: number; currency?: string; error?: string } | null;
+        if (d?.ok && d.client_secret) {
+          return { ok: true, clientSecret: d.client_secret, amountCents: d.amount_cents ?? 0, currency: d.currency ?? "usd" };
+        }
+        return { ok: false, message: d?.error ?? "The payment service returned an unexpected response." };
+      } catch (e) {
+        return { ok: false, message: `Couldn't reach the payment service (${(e as Error).message}).` };
       }
     },
     [cloud]

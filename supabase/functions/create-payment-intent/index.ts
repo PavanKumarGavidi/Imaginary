@@ -108,14 +108,34 @@ Deno.serve(async (req) => {
     const currency = (Deno.env.get("STRIPE_CURRENCY") ?? "usd").toLowerCase();
     const amountCents = Math.round(pkg.price * 0.3 * 100); /* 30% deposit */
 
-    const intent = await stripe.paymentIntents.create({
-      amount: amountCents,
-      currency,
-      automatic_payment_methods: { enabled: true },
-      receipt_email: booking.email,
-      description: `Imagine deposit — ${pkg.name} (${booking.session})`,
-      metadata: { booking_ref: booking.ref, package: pkg.name },
-    });
+    /* Try the flexible setup first (card + wallets). Some accounts' enabled
+       payment methods don't support the chosen currency — in that case fall
+       back to card-only, which Stripe supports in every currency. */
+    let intent: Stripe.PaymentIntent;
+    try {
+      intent = await stripe.paymentIntents.create({
+        amount: amountCents,
+        currency,
+        automatic_payment_methods: { enabled: true },
+        receipt_email: booking.email,
+        description: `Imagine deposit — ${pkg.name} (${booking.session})`,
+        metadata: { booking_ref: booking.ref, package: pkg.name },
+      });
+    } catch (firstErr) {
+      const reason = (firstErr as Error).message ?? "";
+      if (/payment method|currency/i.test(reason)) {
+        intent = await stripe.paymentIntents.create({
+          amount: amountCents,
+          currency,
+          payment_method_types: ["card"],
+          receipt_email: booking.email,
+          description: `Imagine deposit — ${pkg.name} (${booking.session})`,
+          metadata: { booking_ref: booking.ref, package: pkg.name },
+        });
+      } else {
+        throw firstErr;
+      }
+    }
 
     return send({
       ok: true,
