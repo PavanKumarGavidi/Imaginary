@@ -528,7 +528,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 
 /* ————————————————— DASHBOARD ————————————————— */
 export function Dashboard({ onExit }: { onExit: () => void }) {
-  const { bookings, setBookingStatus, removeBooking, setBookingDeposit, reviews, team, frames, posts, deliveries, logout, toast, cloud, syncError, content, unseenCount, markSeen, requestNotifyPermission } = useStore();
+  const { bookings, setBookingStatus, removeBooking, setBookingDeposit, reviews, team, frames, posts, deliveries, logout, toast, cloud, syncError, content, unseenCount, markSeen, requestNotifyPermission, payments } = useStore();
   const pkgOf = (id: string) => content.packages.find((p) => p.id === id);
   const [tab, setTab] = useState<Tab>("bookings");
 
@@ -601,6 +601,7 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
       () => toast(url)
     );
   };
+  const paymentFor = (b: Booking) => payments.find((p) => p.bookingRef === b.ref) ?? null;
 
   const exportCsv = () => {
     const head = "Ref,Name,Email,Phone,Session,Package,Date,Time,Guests,Status,Notes,Created";
@@ -867,6 +868,11 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                               >
                                 {b.depositPaid ? "Paid ✓" : "Due"}
                               </button>
+                              {paymentFor(b) && (
+                                <span className="mt-1.5 block font-mono text-[9px] tracking-[0.14em] uppercase text-[var(--sage)]">
+                                  Stripe · ${(paymentFor(b)!.amountCents / 100).toFixed(0)}
+                                </span>
+                              )}
                               {pkgOf(b.packageId)?.stripeLink && (
                                 <button onClick={() => copyPayLink(b)} className="mt-1.5 block font-mono text-[9px] tracking-[0.14em] uppercase text-[var(--dim)] transition-colors hover:text-[var(--amber)]">
                                   Copy pay link
@@ -928,6 +934,11 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
                           >
                             Deposit {b.depositPaid ? "paid ✓" : "due"}
                           </button>
+                          {paymentFor(b) && (
+                            <span className="chip !border-[var(--sage)]/50 !text-[var(--sage)]">
+                              Stripe · ${(paymentFor(b)!.amountCents / 100).toFixed(0)}
+                            </span>
+                          )}
                           {pkgOf(b.packageId)?.stripeLink && (
                             <button onClick={() => copyPayLink(b)} className="font-mono text-[9px] tracking-[0.14em] uppercase text-[var(--dim)] transition-colors hover:text-[var(--amber)]">
                               Copy pay link

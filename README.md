@@ -173,19 +173,46 @@ expose to anonymous visitors.
 SQL Editor. It adds `deposit_paid` to bookings plus the `deliveries` and `posts`
 tables, their RLS policies, and a starter journal post.
 
-### 💳 Deposits via Stripe Payment Links (no code, no fees until you earn)
+### 💳 Full Stripe Checkout — automatic 30% deposits
 
-1. In Stripe: **Payment Links → New** — create one link per package (set the
-   amount to that package's 30% deposit, e.g. `$168` for a $560 package).
-2. In the desk: **Content tab → Packages → Edit** → paste the link into
-   *Stripe Payment Link* → publish.
-3. Effect:
-   - The client's booking confirmation shows **"Pay $X deposit"** — it opens
-     Stripe with their email and booking ref prefilled (`client_reference_id`).
-   - The desk's Bookings tab shows a **Deposit: Due / Paid** chip per booking
-     (click to toggle when the payment lands in Stripe) plus **Copy pay link**.
-4. Matching payments to bookings: in Stripe, open a payment and look at its
-   *client reference ID* — it's the booking ref (e.g. `IM-3F7A`).
+The deposit amount is computed **server-side** from each package's price, so
+clients can never tamper with it, and the deposit is confirmed **automatically**
+the moment the payment clears (no manual toggling).
+
+**One-time SQL:** run `supabase/migrations/payments.sql` (creates the staff-only
+`payments` ledger). Already included in `schema.sql` for fresh installs.
+
+**Setup (Stripe + Supabase Edge Functions, ~10 minutes):**
+
+1. **Stripe** → Developers → API Keys → copy your **secret key** (`sk_test_…` to
+   start; switch to `sk_live_…` for real money).
+2. **Supabase → Edge Functions → New function** → name it `create-checkout` →
+   paste `supabase/functions/create-checkout/index.ts` → Deploy. Turn **OFF**
+   "Verify JWT" on its page.
+3. Repeat for `stripe-webhook` using `supabase/functions/stripe-webhook/index.ts`,
+   also with "Verify JWT" **OFF**.
+4. **Edge Functions → Secrets** → add:
+   - `STRIPE_SECRET_KEY` = your secret key (both functions)
+   - `STRIPE_WEBHOOK_SECRET` = the signing secret from step 5 (webhook only)
+5. **Stripe → Developers → Webhooks → Add endpoint** → paste
+   `https://<your-project-ref>.supabase.co/functions/v1/stripe-webhook` →
+   event `checkout.session.completed` → copy the **Signing secret** (`whsec_…`).
+
+**How it works:**
+
+- Client books → success screen shows **"Pay $X deposit"** (30% of the package).
+- Clicking it opens **Stripe Checkout** (card / Apple Pay / Google Pay).
+- On success, Stripe redirects to `#/payment/success` → a "Payment received"
+  page shows the reference and confirms the deposit.
+- The **stripe-webhook** function flips `deposit_paid` and writes to `payments`,
+  so the desk's Bookings tab shows **Paid ✓** and Insights shows **Collected $** —
+  all automatically, in real time.
+
+Test end-to-end with `sk_test_` keys and card `4242 4242 4242 4242` (any future
+date, any CVC). Stripe fees (2.9% + 30¢) apply only when you actually get paid.
+
+> Legacy: the old per-package *Stripe Payment Link* field still works as a manual
+> fallback ("Copy pay link" in the desk), but the Checkout flow above is automatic.
 
 ### 🔒 Client delivery galleries
 

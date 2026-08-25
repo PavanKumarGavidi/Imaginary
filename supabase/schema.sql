@@ -204,6 +204,23 @@ insert into public.posts (id, slug, title, excerpt, cover, body, tag, published)
 on conflict (id) do nothing;
 
 -- ============================================================
+-- PAYMENTS — Stripe deposit ledger (staff-only)
+-- (existing projects: run supabase/migrations/payments.sql instead)
+-- ============================================================
+create table if not exists public.payments (
+  id                text primary key default gen_random_uuid()::text,
+  booking_ref       text not null,
+  amount_cents      integer not null,
+  currency          text not null default 'usd',
+  stripe_session_id text,
+  created_at        timestamptz not null default now()
+);
+alter table public.payments enable row level security;
+drop policy if exists "payments staff all" on public.payments;
+create policy "payments staff all"
+  on public.payments for all to authenticated using (true) with check (true);
+
+-- ============================================================
 -- TIER 1 — image Storage bucket + slot availability
 -- ============================================================
 
