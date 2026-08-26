@@ -106,6 +106,20 @@ export default function DepositModal({
     };
   }, []);
 
+  /* on phones the keyboard shrinks the visual viewport — keep the sheet sized to
+     what's actually visible so the pay button never ends up underneath it */
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const el = rootRef.current;
+    if (!vv || !el) return;
+    const onResize = () => {
+      el.style.height = `${vv.height}px`;
+    };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
+
   /* esc / backdrop close — disabled while money is moving */
   const closeable = stage === "ready" || stage === "success" || stage === "error";
   useEffect(() => {
@@ -163,6 +177,7 @@ export default function DepositModal({
 
   return (
     <div
+      ref={rootRef}
       className="fade-in fixed inset-0 z-[90] flex items-end justify-center bg-[rgba(18,42,62,0.55)] p-0 backdrop-blur-sm sm:items-center sm:p-6"
       onClick={() => closeable && onClose()}
       role="dialog"
@@ -170,50 +185,50 @@ export default function DepositModal({
       aria-label="Pay your deposit"
     >
       <div
-        className="pop-in relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden border border-[var(--line)] bg-white shadow-[0_50px_120px_-40px_rgba(18,42,62,0.7)]"
+        className="pop-in relative flex h-[100dvh] w-full flex-col overflow-hidden border border-[var(--line)] bg-white shadow-[0_50px_120px_-40px_rgba(18,42,62,0.7)] sm:h-auto sm:max-h-[90vh] sm:max-w-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ————— header: booking summary strip ————— */}
-        <div className="relative overflow-hidden bg-[#10293e] px-6 py-5 text-[#f2f9fe] sm:px-8">
-          <div aria-hidden="true" className="pointer-events-none absolute -right-6 -top-10 select-none font-display text-[10rem] italic leading-none opacity-[0.07]">
+        <div className="relative shrink-0 overflow-hidden bg-[#10293e] px-5 py-4 text-[#f2f9fe] sm:px-8 sm:py-5">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-6 -top-10 select-none font-display text-[7rem] italic leading-none opacity-[0.07] sm:text-[10rem]">
             ƒ
           </div>
-          <div className="relative flex items-start justify-between gap-4">
-            <div>
-              <div className="font-mono text-[9.5px] tracking-[0.3em] uppercase text-[#7ab8e6]">Secure deposit · booking</div>
-              <div className="mt-1 font-display text-2xl tracking-[0.08em]">{booking.ref}</div>
-              <div className="mt-1.5 font-mono text-[10.5px] tracking-[0.14em] uppercase text-[rgba(242,249,254,0.65)]">
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="font-mono text-[9px] tracking-[0.3em] uppercase text-[#7ab8e6] sm:text-[9.5px]">Secure deposit · booking</div>
+              <div className="mt-0.5 truncate font-display text-xl tracking-[0.08em] sm:mt-1 sm:text-2xl">{booking.ref}</div>
+              <div className="mt-1 truncate font-mono text-[9.5px] tracking-[0.12em] uppercase text-[rgba(242,249,254,0.65)] sm:text-[10.5px]">
                 {pkg.name} · {fmtDate(booking.date)} · {booking.time}
               </div>
             </div>
             <button
               onClick={() => closeable && onClose()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center border border-[rgba(242,249,254,0.25)] text-[#f2f9fe] transition-colors hover:border-[#7ab8e6] hover:text-[#7ab8e6]"
+              className="flex h-10 w-10 shrink-0 items-center justify-center border border-[rgba(242,249,254,0.25)] text-[#f2f9fe] transition-colors hover:border-[#7ab8e6] hover:text-[#7ab8e6] sm:h-9 sm:w-9"
               aria-label="Close payment window"
             >
               <IconX width={16} height={16} />
             </button>
           </div>
-          <div className="relative mt-4 flex items-end justify-between border-t border-[rgba(242,249,254,0.15)] pt-3.5">
+          <div className="relative mt-3 flex items-end justify-between gap-3 border-t border-[rgba(242,249,254,0.15)] pt-3 sm:mt-4 sm:pt-3.5">
             {stage === "success" ? (
               <>
-                <div>
-                  <div className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.24em] uppercase text-[#7ee2a8]">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 font-mono text-[8.5px] tracking-[0.22em] uppercase text-[#7ee2a8] sm:text-[9px]">
                     <IconCheck width={11} height={11} /> Deposit paid · date locked
                   </div>
-                  <div className="font-display text-4xl leading-tight text-[#7ee2a8]">{fmt(amount, currency)}</div>
+                  <div className="font-display text-3xl leading-tight text-[#7ee2a8] sm:text-4xl">{fmt(amount, currency)}</div>
                 </div>
-                <div className="pb-1 text-right font-mono text-[9px] leading-relaxed tracking-[0.18em] uppercase text-[rgba(242,249,254,0.5)]">
+                <div className="hidden pb-1 text-right font-mono text-[9px] leading-relaxed tracking-[0.18em] uppercase text-[rgba(242,249,254,0.5)] sm:block">
                   Receipt sent to<br />{booking.email}
                 </div>
               </>
             ) : (
               <>
-                <div>
-                  <div className="font-mono text-[9px] tracking-[0.24em] uppercase text-[rgba(242,249,254,0.6)]">30% deposit due today</div>
-                  <div className="font-display text-4xl leading-tight text-[#8fd0f7]">{fmt(amount, currency)}</div>
+                <div className="min-w-0">
+                  <div className="font-mono text-[8.5px] tracking-[0.22em] uppercase text-[rgba(242,249,254,0.6)] sm:text-[9px]">30% deposit due today</div>
+                  <div className="font-display text-3xl leading-tight text-[#8fd0f7] sm:text-4xl">{fmt(amount, currency)}</div>
                 </div>
-                <div className="pb-1 text-right font-mono text-[9px] leading-relaxed tracking-[0.18em] uppercase text-[rgba(242,249,254,0.5)]">
+                <div className="pb-1 text-right font-mono text-[8.5px] leading-relaxed tracking-[0.16em] uppercase text-[rgba(242,249,254,0.5)] sm:text-[9px]">
                   Balance {fmt(Math.round(pkg.price * 100) - amount, currency)}<br />due 48h before the session
                 </div>
               </>
@@ -222,7 +237,7 @@ export default function DepositModal({
         </div>
 
         {/* ————— body ————— */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-8">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-8 sm:py-6">
           {stage === "success" ? (
             <div className="pop-in relative">
               {/* the rubber stamp */}
@@ -233,14 +248,14 @@ export default function DepositModal({
                 Received
               </div>
 
-              <h3 className="font-display text-3xl text-[var(--ink)]">Payment received.</h3>
+              <h3 className="font-display text-2xl text-[var(--ink)] sm:text-3xl">Payment received.</h3>
               <p className="mt-1.5 text-sm text-[var(--muted)]">Your date is officially on the calendar. Here's your studio receipt.</p>
 
               {/* ————— the receipt ————— */}
-              <div className="relative mt-6 overflow-hidden border border-[var(--line)] bg-[var(--bg2)]">
+              <div className="relative mt-5 overflow-hidden border border-[var(--line)] bg-[var(--bg2)] sm:mt-6">
                 <FilmHoles className="bg-[#10293e]" />
 
-                <dl className="grid grid-cols-[110px_1fr] gap-x-4 gap-y-2.5 px-5 py-5">
+                <dl className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-2.5 px-4 py-4 sm:grid-cols-[110px_1fr] sm:gap-x-4 sm:px-5 sm:py-5">
                   <dt className="label !mb-0">Reference</dt>
                   <dd className="font-mono text-sm font-semibold tracking-[0.08em] text-[var(--amber)]">{booking.ref}</dd>
 
@@ -267,9 +282,9 @@ export default function DepositModal({
                 </dl>
 
                 {/* tear line */}
-                <div aria-hidden="true" className="mx-5 border-t-2 border-dashed border-[var(--line)]" />
+                <div aria-hidden="true" className="mx-4 border-t-2 border-dashed border-[var(--line)] sm:mx-5" />
 
-                <dl className="grid grid-cols-[110px_1fr] gap-x-4 gap-y-2.5 px-5 py-4">
+                <dl className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-2.5 px-4 py-4 sm:grid-cols-[110px_1fr] sm:gap-x-4 sm:px-5">
                   <dt className="label !mb-0">Paid today</dt>
                   <dd className="font-display text-xl leading-tight text-[var(--sage)]">{fmt(amount, currency)}</dd>
 
@@ -318,7 +333,7 @@ export default function DepositModal({
               )}
 
               {/* Stripe mounts the card form / wallets here — stays on this page */}
-              <div ref={mountRef} className={stage === "loading" ? "hidden" : "min-h-[140px]"} />
+              <div ref={mountRef} className={stage === "loading" ? "hidden" : "min-h-[170px] sm:min-h-[150px]"} />
 
               {stage === "loading" && (
                 <p className="mt-3 text-center font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">
@@ -326,44 +341,55 @@ export default function DepositModal({
                 </p>
               )}
 
-              {message && stage === "error" && (
-                <div className="mt-4 border border-[var(--ember)]/50 bg-[rgba(208,91,69,0.07)] px-4 py-3 text-sm text-[var(--ember)]">
-                  {message}
-                  {/wasn't found in the ledger/i.test(message) && (
-                    <span className="mt-2 block text-[var(--muted)]">
-                      This usually means the booking didn't sync to the studio. Close this panel and submit the booking form
-                      again — you'll now see a clear note if the save fails.
-                    </span>
-                  )}
-                </div>
+              {stage === "ready" && (
+                <p className="mt-4 hidden text-center font-mono text-[9px] leading-relaxed tracking-[0.16em] uppercase text-[var(--dim)] sm:block">
+                  You'll stay on this page — the receipt appears the moment the card clears
+                </p>
               )}
-
-              <button
-                onClick={pay}
-                disabled={stage !== "ready" && stage !== "error"}
-                className="btn-solid mt-5 w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {stage === "processing" ? (
-                  <>
-                    <IconAperture width={17} height={17} className="animate-spin" /> Processing securely…
-                  </>
-                ) : (
-                  <>
-                    Pay {fmt(amount, currency)} deposit <IconArrow width={15} height={15} />
-                  </>
-                )}
-              </button>
-
-              <p className="mt-4 flex items-center justify-center gap-2 text-center font-mono text-[9px] leading-relaxed tracking-[0.16em] uppercase text-[var(--dim)]">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <rect x="5" y="10.5" width="14" height="10" rx="1.5" />
-                  <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
-                </svg>
-                Card details are encrypted by Stripe and never touch our server
-              </p>
             </>
           )}
         </div>
+
+        {/* ————— footer: pinned pay action — always reachable, keyboard-safe ————— */}
+        {stage !== "success" && (
+          <div className="shrink-0 border-t border-[var(--line-soft)] bg-white px-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] pt-4 sm:px-8">
+            {message && stage === "error" && (
+              <div className="mb-3 max-h-28 overflow-y-auto border border-[var(--ember)]/50 bg-[rgba(208,91,69,0.07)] px-4 py-3 text-sm leading-relaxed text-[var(--ember)]">
+                {message}
+                {/wasn't found in the ledger/i.test(message) && (
+                  <span className="mt-2 block text-[var(--muted)]">
+                    This usually means the booking didn't sync to the studio. Close this panel and submit the booking form
+                    again — you'll see a clear note if the save fails.
+                  </span>
+                )}
+              </div>
+            )}
+            <button
+              onClick={pay}
+              disabled={stage !== "ready" && stage !== "error"}
+              className="btn-solid w-full justify-center !py-4 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {stage === "processing" ? (
+                <>
+                  <IconAperture width={17} height={17} className="animate-spin" /> Processing securely…
+                </>
+              ) : stage === "loading" ? (
+                <>Contacting the payment desk…</>
+              ) : (
+                <>
+                  Pay {fmt(amount, currency)} deposit <IconArrow width={15} height={15} />
+                </>
+              )}
+            </button>
+            <p className="mt-3 flex items-center justify-center gap-2 text-center font-mono text-[8.5px] leading-relaxed tracking-[0.14em] uppercase text-[var(--dim)] sm:text-[9px]">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <rect x="5" y="10.5" width="14" height="10" rx="1.5" />
+                <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+              </svg>
+              Card details are encrypted by Stripe and never touch our server
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

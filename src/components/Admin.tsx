@@ -488,7 +488,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fade-in fixed inset-0 z-[90] flex items-center justify-center bg-[rgba(18,42,62,0.5)] px-5 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-label="Change password">
-      <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="pop-in panel w-full max-w-md p-7 shadow-[0_40px_90px_-40px_rgba(18,42,62,0.6)]">
+      <form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="pop-in panel max-h-[92dvh] w-full max-w-md overflow-y-auto p-5 shadow-[0_40px_90px_-40px_rgba(18,42,62,0.6)] sm:p-7">
         <div className="flex items-start justify-between">
           <div>
             <div className="kicker">Security</div>
