@@ -27,6 +27,7 @@ import {
 import { SafeImg, ScrambleText } from "./ui";
 import { ContentPanel, DeliveriesPanel, GalleryPanel, JournalPanel, PhotosPanel, ReviewsPanel, TeamPanel } from "./AdminPanels";
 import Insights from "./Insights";
+import SystemCheck from "./SystemCheck";
 import { stripeUrl } from "../lib/util";
 
 const STATUS_META: Record<BookingStatus, { label: string; dot: string; pill: string }> = {
@@ -796,6 +797,9 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
 
               {/* insights */}
               <Insights />
+
+              {/* deployment health smoke test */}
+              <SystemCheck />
 
               {/* controls */}
               <div className="mt-8 flex flex-wrap items-center gap-3">

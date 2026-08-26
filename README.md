@@ -280,3 +280,31 @@ On phones a floating dock appears after scrolling: **Call**, **WhatsApp** and
 (Content → Contact → *WhatsApp number*, any format) and it also appears in the
 footer. Leave it blank to hide the WhatsApp actions (the dock then uses your
 phone number).
+
+## Final polish — SEO & automated health checks
+
+### 🔎 Per-page SEO meta
+
+Every page sets its own `title`, meta description, Open Graph tags (og:title /
+og:description / og:type / og:url / og:image), Twitter card tags and canonical
+URL as you navigate — including each journal post (which uses its own title,
+excerpt and cover image). Handled by the SEO effect in `App.tsx`; the static
+tags in `index.html` are the fallback. Note: as an SPA, social bots that don't
+run JS will still read the base `index.html` tags for shared links.
+
+### 🧪 Preflight — automated deployment health check
+
+Desk → Bookings tab → **"Preflight · deployment health"**. One click runs a
+smoke test of the whole deployment and reports pass / check / fail per item:
+
+- all 9 database tables (bookings, reviews, team_members, gallery_frames,
+  site_content, site_photos, deliveries, posts, payments)
+- the `taken_slots()` availability function
+- the `create-payment-intent` Edge Function (proves it's deployed + reachable)
+- the `photos` storage bucket
+- EmailJS configuration (studio + client templates)
+- the Stripe publishable key
+
+Each failing row shows the exact error **and the fix** (which SQL to run, which
+secret to set, etc.). Run it after any deploy, SQL change or new feature — it
+verifies exactly what your visitors depend on.

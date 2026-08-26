@@ -54,6 +54,28 @@ const hashFor = (view: View, param: string | null): string => {
   }
 };
 
+/** Create-or-update a <meta> tag in <head> (used by the per-page SEO effect). */
+const setMetaTag = (attr: "name" | "property", key: string, content: string) => {
+  let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attr, key);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", content);
+};
+
+/** Create-or-update the <link rel="canonical"> tag. */
+const setCanonical = (href: string) => {
+  let el = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!el) {
+    el = document.createElement("link");
+    el.rel = "canonical";
+    document.head.appendChild(el);
+  }
+  el.href = href;
+};
+
 function BootScreen() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6">
@@ -118,17 +140,46 @@ function Shell() {
     if (window.location.hash !== target) window.history.replaceState(null, "", next);
   }, [view, param]);
 
-  /* per-view document titles — good for tabs, bookmarks and SEO */
+  /* ————— per-page SEO — title, description, Open Graph & canonical on every page ————— */
   useEffect(() => {
+    const origin = window.location.origin + window.location.pathname;
     const base = "Imagine — Photography Studio & Darkroom";
-    if (view === "admin") document.title = "Studio Desk — Imagine";
-    else if (view === "login") document.title = "Staff — Imagine";
-    else if (view === "journal") document.title = "Journal — Imagine";
-    else if (view === "post") document.title = `${posts.find((p) => p.slug === param)?.title ?? "Journal"} — Imagine`;
-    else if (view === "delivery") {
-      const d = deliveries.find((x) => x.id === param);
-      document.title = d ? `${d.title} — Private Gallery` : "Private Gallery — Imagine";
-    } else document.title = base;
+    const baseDesc =
+      "Portland photography studio & working darkroom — portraits, weddings, editorial and product work, lit slowly. Book a session online and pay your deposit on the spot.";
+    const post = view === "post" ? posts.find((p) => p.slug === param) : undefined;
+    const dlv = view === "delivery" ? deliveries.find((x) => x.id === param) : undefined;
+
+    const meta = (() => {
+      switch (view) {
+        case "admin":
+          return { title: "Studio Desk — Imagine", desc: "The Imagine studio booking ledger and content desk.", type: "website", url: `${origin}#/desk` };
+        case "login":
+          return { title: "Staff sign-in — Imagine", desc: "Staff entrance for the Imagine studio desk.", type: "website", url: `${origin}#/staff` };
+        case "journal":
+          return { title: "Journal — Imagine Studio", desc: "Behind-the-scenes stories, lighting notes and wedding days from the Imagine darkroom.", type: "website", url: `${origin}#/journal` };
+        case "post":
+          return post
+            ? { title: `${post.title} — Imagine Journal`, desc: post.excerpt || baseDesc, image: post.cover || undefined, type: "article", url: `${origin}#/journal/${post.slug}` }
+            : { title: "Journal — Imagine Studio", desc: baseDesc, type: "website", url: `${origin}#/journal` };
+        case "delivery":
+          return { title: dlv ? `${dlv.title} — Private Gallery · Imagine` : "Private Gallery — Imagine", desc: "A private photo delivery from Imagine Studio.", type: "website", url: param ? `${origin}#/delivery/${param}` : origin };
+        default:
+          return { title: base, desc: baseDesc, type: "website", url: origin };
+      }
+    })();
+
+    document.title = meta.title;
+    setMetaTag("name", "description", meta.desc);
+    setMetaTag("property", "og:site_name", "Imagine Studio");
+    setMetaTag("property", "og:title", meta.title);
+    setMetaTag("property", "og:description", meta.desc);
+    setMetaTag("property", "og:type", meta.type);
+    setMetaTag("property", "og:url", meta.url);
+    if (meta.image) setMetaTag("property", "og:image", meta.image);
+    setMetaTag("name", "twitter:card", meta.image ? "summary_large_image" : "summary");
+    setMetaTag("name", "twitter:title", meta.title);
+    setMetaTag("name", "twitter:description", meta.desc);
+    setCanonical(meta.url);
   }, [view, param, posts, deliveries]);
 
   const goAdmin = () => navigate(isAdmin ? "admin" : "login");
