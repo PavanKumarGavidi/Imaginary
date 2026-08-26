@@ -309,6 +309,38 @@ export default function BookingSection() {
                   const p = pkgById(submitted.packageId);
                   if (!p || p.price <= 0) return null;
                   const deposit = Math.round(p.price * 0.3);
+
+                  /* ——— deposit already paid → calm "locked in" summary, no payment CTA ——— */
+                  if (submitted.depositPaid) {
+                    return (
+                      <div className="pop-in mt-6 border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.06)] p-5">
+                        <div className="flex items-start gap-3.5">
+                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--sage)]/60 bg-[rgba(47,138,99,0.12)] text-[var(--sage)]">
+                            <IconCheck width={16} height={16} />
+                          </span>
+                          <div>
+                            <div className="font-display text-xl text-[var(--ink)]">Deposit paid — your date is locked.</div>
+                            <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+                              <span className="font-semibold text-[var(--ink)]">${deposit}</span> received via Stripe · balance of{" "}
+                              <span className="font-semibold text-[var(--ink)]">${p.price - deposit}</span> due 48 hours before the
+                              session. Your call sheet lands in your inbox within 24 hours.
+                            </p>
+                            <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-[9px] tracking-[0.16em] uppercase">
+                              <span className="flex items-center gap-1.5 border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.1)] px-2.5 py-1 text-[var(--sage)]">
+                                <IconCheck width={10} height={10} /> Deposit
+                              </span>
+                              <span className="text-[var(--dim)]">→</span>
+                              <span className="border border-[var(--line)] px-2.5 py-1 text-[var(--muted)]">Call sheet · 24h</span>
+                              <span className="text-[var(--dim)]">→</span>
+                              <span className="border border-[var(--line)] px-2.5 py-1 text-[var(--muted)]">Shoot day</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  /* ——— unpaid → the lock-it-now deposit CTA ——— */
                   return (
                     <div className="mt-6 border border-[var(--sage)]/40 bg-[rgba(47,138,99,0.06)] p-5">
                       <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
