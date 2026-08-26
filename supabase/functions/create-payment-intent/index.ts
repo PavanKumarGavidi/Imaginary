@@ -88,7 +88,6 @@ Deno.serve(async (req) => {
     }
 
     if (!booking) {
-      /* diagnostic: show what IS in the ledger so mismatches are obvious */
       const list = await supabase.from("bookings").select("ref").order("created_at", { ascending: false }).limit(5);
       const recent = ((list.data ?? []) as { ref: string }[]).map((r) => r.ref).join(", ") || "none";
       const base = lastErr
@@ -118,11 +117,13 @@ Deno.serve(async (req) => {
     const currency = (Deno.env.get("STRIPE_CURRENCY") ?? "usd").toLowerCase();
     const amountCents = Math.round(pkg.price * 0.3 * 100); /* 30% deposit */
 
-    const meta = { booking_ref: booking.ref, package: pkg.name };
+    /* Stripe calls this field "metadata" (m-e-t-a-d-a-t-a) — the booking ref
+       travels with the payment so the webhook can confirm the right booking. */
+    const intentMeta = { booking_ref: booking.ref, package: pkg.name };
+    const MD_KEY = "metadata";
 
-    /* Try the flexible setup first (card + wallets). Some accounts' enabled
-       payment methods don't support the chosen currency — in that case fall
-       back to card-only, which Stripe supports in every currency. */
+    /* Try card + wallets first; fall back to card-only if the account's
+       payment methods don't support the chosen currency. */
     let intent: Stripe.PaymentIntent;
     try {
       intent = await stripe.paymentIntents.create({
@@ -131,7 +132,7 @@ Deno.serve(async (req) => {
         automatic_payment_methods: { enabled: true },
         receipt_email: booking.email,
         description: `Imagine deposit — ${pkg.name} (${booking.session})`,
-        meta: meta,
+        [MD_KEY]: intentMeta,
       });
     } catch (firstErr) {
       const reason = (firstErr as Error).message ?? "";
@@ -142,7 +143,7 @@ Deno.serve(async (req) => {
           payment_method_types: ["card"],
           receipt_email: booking.email,
           description: `Imagine deposit — ${pkg.name} (${booking.session})`,
-          meta: meta,
+          [MD_KEY]: intentMeta,
         });
       } else {
         throw firstErr;
@@ -159,7 +160,6 @@ Deno.serve(async (req) => {
   } catch (e) {
     const msg = (e as Error).message ?? String(e);
     console.error("create-payment-intent failed:", msg);
-    /* friendly hint for the two most common Stripe account errors */
     if (/currency/i.test(msg) && /not supported|invalid/i.test(msg)) {
       return send({
         ok: false,
