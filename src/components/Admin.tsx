@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
 import { hasRecoveryInUrl } from "../lib/supabase";
+import { emailNotificationsEnabled, sendTestBookingEmails } from "../lib/notify";
 import { useStore } from "../store";
 import type { Booking, BookingStatus } from "../store";
 import {
@@ -544,6 +545,22 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
   const [notifyPerm, setNotifyPerm] = useState<string>(() =>
     typeof Notification === "undefined" ? "unsupported" : Notification.permission
   );
+  const [mailTesting, setMailTesting] = useState(false);
+
+  /* fire a sample booking through both email templates to verify the wiring */
+  const testEmails = async () => {
+    if (mailTesting) return;
+    setMailTesting(true);
+    const res = await sendTestBookingEmails(content.contact.email);
+    setMailTesting(false);
+    if (!res.enabled) {
+      toast("Emails aren't configured — set the EmailJS keys first.", "err");
+      return;
+    }
+    if (res.studio && res.client) toast(`Test sent — check ${content.contact.email} for both the studio alert and the client email.`);
+    else if (res.studio) toast("Studio alert sent, but the client email failed — check the template's To Email field.", "err");
+    else toast("Test emails failed — check your EmailJS templates and keys.", "err");
+  };
 
   const counts = useMemo(
     () => ({
@@ -656,6 +673,16 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
           <button onClick={onExit} className="btn-ghost !px-4 !py-2 text-sm">
             <IconBack width={15} height={15} /> View site
           </button>
+          {emailNotificationsEnabled && (
+            <button
+              onClick={() => void testEmails()}
+              disabled={mailTesting}
+              className="hidden items-center gap-2 border border-[var(--line)] px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] disabled:cursor-wait disabled:opacity-60 sm:flex"
+              title="Send a sample booking through both email templates to verify they work"
+            >
+              <IconMail width={13} height={13} /> {mailTesting ? "Sending…" : "Test emails"}
+            </button>
+          )}
           {cloud && notifyPerm !== "unsupported" && (
             notifyPerm === "granted" ? (
               <span className="hidden items-center gap-2 border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.08)] px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--sage)] sm:flex" title="Browser alerts for new bookings are on">

@@ -63,3 +63,39 @@ export async function sendBookingEmails(b: Booking, packageName: string): Promis
     client: CLIENT_TPL ? results[1].status === "fulfilled" : false,
   };
 }
+
+/**
+ * Desk utility — fires one sample booking through BOTH templates so the admin
+ * can verify the wiring. Both test emails go to the admin inbox (the client
+ * template's To Email = {{client_email}} is filled with the admin's address).
+ */
+export async function sendTestBookingEmails(adminEmail: string): Promise<BookingEmailResult> {
+  if (!emailNotificationsEnabled) return { enabled: false, studio: false, client: false };
+
+  const params = {
+    booking_ref: "IM-TEST",
+    client_name: "Test Client",
+    client_email: adminEmail,
+    client_phone: "(555) 000-0000",
+    session: "Portrait Sessions",
+    package: "The Contact Sheet",
+    date: "2026-12-24",
+    time: "10:30",
+    guests: "2",
+    notes: "This is a test booking from the Imagine desk — ignore it.",
+    reply_to: adminEmail,
+  };
+
+  const jobs: Promise<unknown>[] = [
+    emailjs.send(SERVICE as string, STUDIO_TPL as string, params, { publicKey: PUBLIC_KEY as string }),
+  ];
+  if (CLIENT_TPL) {
+    jobs.push(emailjs.send(SERVICE as string, CLIENT_TPL, params, { publicKey: PUBLIC_KEY as string }));
+  }
+  const results = await Promise.allSettled(jobs);
+  return {
+    enabled: true,
+    studio: results[0].status === "fulfilled",
+    client: CLIENT_TPL ? results[1].status === "fulfilled" : false,
+  };
+}
