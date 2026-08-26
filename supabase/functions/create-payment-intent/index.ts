@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     );
 
     /* the booking */
-    const {  bData, error: bErr } = await supabase
+    const { data: bData, error: bErr } = await supabase
       .from("bookings")
       .select("ref,name,email,session,package_id,date,time")
       .eq("ref", booking_ref)
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
     const booking = bData as unknown as BookingRow;
 
     /* the package price — the amount is decided HERE, server-side */
-    const {  cData, error: cErr } = await supabase
+    const { data: cData, error: cErr } = await supabase
       .from("site_content")
       .select("value")
       .eq("key", "packages")
