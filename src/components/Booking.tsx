@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabase";
 import { emailNotificationsEnabled, sendBookingEmails } from "../lib/notify";
 import DepositModal from "./DepositModal";
 import { Reveal } from "./ui";
-import { IconAperture, IconArrow, IconCalendar, IconClock, IconLock, IconMail, IconPhone, IconPin, IconUsers } from "./Icons";
+import { IconAperture, IconArrow, IconCalendar, IconCheck, IconClock, IconLock, IconMail, IconPhone, IconPin, IconUsers } from "./Icons";
 
 const fmtDate = (d: string) =>
   new Date(`${d}T00:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
@@ -289,9 +289,15 @@ export default function BookingSection() {
                 <div className="mt-8 border border-dashed border-[var(--line)] bg-[var(--bg2)] p-5 text-center">
                   <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-[var(--dim)]">Your reference</div>
                   <div className="font-display mt-2 text-4xl tracking-[0.14em] text-[var(--amber)]">{submitted.ref}</div>
-                  <div className="mt-2 inline-flex items-center gap-2 border border-[var(--amber)]/40 bg-[rgba(13,127,194,0.08)] px-3 py-1 font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--amber)]">
-                    <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[var(--amber)]" /> Pending confirmation
-                  </div>
+                  {submitted.depositPaid ? (
+                    <div className="mt-2 inline-flex items-center gap-2 border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.08)] px-3 py-1 font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--sage)]">
+                      <IconCheck width={11} height={11} /> Deposit paid · date locked
+                    </div>
+                  ) : (
+                    <div className="mt-2 inline-flex items-center gap-2 border border-[var(--amber)]/40 bg-[rgba(13,127,194,0.08)] px-3 py-1 font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--amber)]">
+                      <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[var(--amber)]" /> Pending confirmation
+                    </div>
+                  )}
                   {emailNotificationsEnabled && (
                     <p className="mt-3 font-mono text-[9.5px] tracking-[0.18em] uppercase text-[var(--dim)]">
                       ✉ A copy of this request is on its way to your inbox
@@ -359,7 +365,14 @@ export default function BookingSection() {
                 {depositOpen && (() => {
                   const p = pkgById(submitted.packageId);
                   if (!p || p.price <= 0) return null;
-                  return <DepositModal booking={submitted} pkg={p} onClose={() => setDepositOpen(false)} />;
+                  return (
+                    <DepositModal
+                      booking={submitted}
+                      pkg={p}
+                      onClose={() => setDepositOpen(false)}
+                      onPaid={() => setSubmitted((s) => (s ? { ...s, depositPaid: true } : s))}
+                    />
+                  );
                 })()}
               </div>
             ) : (

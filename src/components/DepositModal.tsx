@@ -24,12 +24,36 @@ const fmtDate = (iso: string) => {
  * On-site 30% deposit payment. The Stripe Payment Element (card form + wallets)
  * renders inside this modal on the same page — the client never leaves the site.
  */
-export default function DepositModal({ booking, pkg, onClose }: { booking: Booking; pkg: Pkg; onClose: () => void }) {
+/** A strip of film-sprocket holes — the studio's signature perforation. */
+function FilmHoles({ className = "" }: { className?: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`h-3 ${className}`}
+      style={{
+        backgroundImage: "repeating-linear-gradient(90deg, rgba(18,42,62,0.55) 0 14px, transparent 14px 32px)",
+      }}
+    />
+  );
+}
+
+export default function DepositModal({
+  booking,
+  pkg,
+  onClose,
+  onPaid,
+}: {
+  booking: Booking;
+  pkg: Pkg;
+  onClose: () => void;
+  onPaid?: () => void;
+}) {
   const { createPaymentIntent, toast } = useStore();
   const [stage, setStage] = useState<Stage>("loading");
   const [amount, setAmount] = useState(() => Math.round(pkg.price * 0.3 * 100));
   const [currency, setCurrency] = useState("usd");
   const [message, setMessage] = useState("");
+  const [payRef, setPayRef] = useState("");
   const mountRef = useRef<HTMLDivElement>(null);
   const elementsRef = useRef<StripeElements | null>(null);
   const paymentElRef = useRef<StripePaymentElement | null>(null);
@@ -109,7 +133,7 @@ export default function DepositModal({ booking, pkg, onClose }: { booking: Booki
       }
 
       const origin = window.location.origin + window.location.pathname;
-      const { error } = await stripe.confirmPayment({
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           /* only used if the bank demands a 3-D Secure redirect */
@@ -124,10 +148,12 @@ export default function DepositModal({ booking, pkg, onClose }: { booking: Booki
         return;
       }
 
-      /* No redirect needed — the card cleared immediately. */
+      /* No redirect needed — the card cleared immediately. Show the receipt in place. */
       paidRef.current = true;
+      setPayRef(paymentIntent?.id ?? "");
       sessionStorage.setItem("imagine_last_booking_ref", booking.ref);
       setStage("success");
+      onPaid?.();
       toast(`Deposit received — ${booking.ref} is locked in.`);
     } catch {
       setMessage("Something interrupted the payment. Nothing was charged — please try again.");
@@ -169,31 +195,111 @@ export default function DepositModal({ booking, pkg, onClose }: { booking: Booki
             </button>
           </div>
           <div className="relative mt-4 flex items-end justify-between border-t border-[rgba(242,249,254,0.15)] pt-3.5">
-            <div>
-              <div className="font-mono text-[9px] tracking-[0.24em] uppercase text-[rgba(242,249,254,0.6)]">30% deposit due today</div>
-              <div className="font-display text-4xl leading-tight text-[#8fd0f7]">{fmt(amount, currency)}</div>
-            </div>
-            <div className="pb-1 text-right font-mono text-[9px] leading-relaxed tracking-[0.18em] uppercase text-[rgba(242,249,254,0.5)]">
-              Balance {fmt(Math.round(pkg.price * 100) - amount, currency)}<br />due 48h before the session
-            </div>
+            {stage === "success" ? (
+              <>
+                <div>
+                  <div className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.24em] uppercase text-[#7ee2a8]">
+                    <IconCheck width={11} height={11} /> Deposit paid · date locked
+                  </div>
+                  <div className="font-display text-4xl leading-tight text-[#7ee2a8]">{fmt(amount, currency)}</div>
+                </div>
+                <div className="pb-1 text-right font-mono text-[9px] leading-relaxed tracking-[0.18em] uppercase text-[rgba(242,249,254,0.5)]">
+                  Receipt sent to<br />{booking.email}
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <div className="font-mono text-[9px] tracking-[0.24em] uppercase text-[rgba(242,249,254,0.6)]">30% deposit due today</div>
+                  <div className="font-display text-4xl leading-tight text-[#8fd0f7]">{fmt(amount, currency)}</div>
+                </div>
+                <div className="pb-1 text-right font-mono text-[9px] leading-relaxed tracking-[0.18em] uppercase text-[rgba(242,249,254,0.5)]">
+                  Balance {fmt(Math.round(pkg.price * 100) - amount, currency)}<br />due 48h before the session
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* ————— body ————— */}
         <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-8">
           {stage === "success" ? (
-            <div className="pop-in flex flex-col items-center py-6 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[var(--sage)] bg-[rgba(47,138,99,0.08)] text-[var(--sage)]">
-                <IconCheck width={30} height={30} />
+            <div className="pop-in relative">
+              {/* the rubber stamp */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -top-1 right-0 z-10 rotate-[8deg] border-[2.5px] border-[var(--sage)] bg-white/70 px-3 py-1 font-display text-lg tracking-[0.22em] uppercase text-[var(--sage)] opacity-90 backdrop-blur-[1px]"
+              >
+                Received
               </div>
-              <h3 className="font-display mt-5 text-3xl text-[var(--ink)]">Payment received.</h3>
-              <p className="mt-2 max-w-sm text-sm leading-relaxed text-[var(--muted)]">
-                <span className="font-semibold text-[var(--ink)]">{fmt(amount, currency)}</span> is on its way to the studio and{" "}
-                <span className="font-semibold text-[var(--ink)]">{booking.ref}</span> is now locked in. A receipt is in
-                your inbox — we'll see you on set.
-              </p>
-              <button onClick={onClose} className="btn-solid mt-6">
-                Back to your confirmation <IconArrow width={15} height={15} />
+
+              <h3 className="font-display text-3xl text-[var(--ink)]">Payment received.</h3>
+              <p className="mt-1.5 text-sm text-[var(--muted)]">Your date is officially on the calendar. Here's your studio receipt.</p>
+
+              {/* ————— the receipt ————— */}
+              <div className="relative mt-6 overflow-hidden border border-[var(--line)] bg-[var(--bg2)]">
+                <FilmHoles className="bg-[#10293e]" />
+
+                <dl className="grid grid-cols-[110px_1fr] gap-x-4 gap-y-2.5 px-5 py-5">
+                  <dt className="label !mb-0">Reference</dt>
+                  <dd className="font-mono text-sm font-semibold tracking-[0.08em] text-[var(--amber)]">{booking.ref}</dd>
+
+                  <dt className="label !mb-0">Client</dt>
+                  <dd className="text-sm text-[var(--ink)]">{booking.name}</dd>
+
+                  <dt className="label !mb-0">Session</dt>
+                  <dd className="text-sm text-[var(--ink)]">{booking.session}</dd>
+
+                  <dt className="label !mb-0">Package</dt>
+                  <dd className="text-sm text-[var(--ink)]">{pkg.name}</dd>
+
+                  <dt className="label !mb-0">Call sheet</dt>
+                  <dd className="text-sm text-[var(--ink)]">
+                    {fmtDate(booking.date)} · {booking.time} · {booking.guests} guest{booking.guests > 1 ? "s" : ""}
+                  </dd>
+
+                  {payRef && (
+                    <>
+                      <dt className="label !mb-0">Payment</dt>
+                      <dd className="font-mono text-xs text-[var(--muted)]">Stripe · …{payRef.slice(-8)}</dd>
+                    </>
+                  )}
+                </dl>
+
+                {/* tear line */}
+                <div aria-hidden="true" className="mx-5 border-t-2 border-dashed border-[var(--line)]" />
+
+                <dl className="grid grid-cols-[110px_1fr] gap-x-4 gap-y-2.5 px-5 py-4">
+                  <dt className="label !mb-0">Paid today</dt>
+                  <dd className="font-display text-xl leading-tight text-[var(--sage)]">{fmt(amount, currency)}</dd>
+
+                  <dt className="label !mb-0">Balance due</dt>
+                  <dd className="font-mono text-xs leading-relaxed text-[var(--muted)]">
+                    {fmt(Math.round(pkg.price * 100) - amount, currency)} · 48h before the session
+                  </dd>
+                </dl>
+
+                <FilmHoles className="bg-[#10293e]" />
+              </div>
+
+              {/* ————— what happens next ————— */}
+              <ol className="mt-5 space-y-2.5">
+                {[
+                  <>A receipt is on its way to <span className="font-semibold text-[var(--ink)]">{booking.email}</span>.</>,
+                  <>The desk confirms your call sheet within <span className="font-semibold text-[var(--ink)]">24 hours</span>.</>,
+                  <>We'll remind you about the balance 48h before the session.</>,
+                ].map((step, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm text-[var(--muted)]">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-[var(--line)] font-mono text-[10px] text-[var(--amber)]">
+                      {i + 1}
+                    </span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+
+              <button onClick={onClose} className="btn-solid mt-6 w-full justify-center">
+                Done — back to your confirmation <IconArrow width={15} height={15} />
               </button>
             </div>
           ) : (
