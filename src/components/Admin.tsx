@@ -586,16 +586,6 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
     if (tab === "bookings") markSeen();
   }, [tab, markSeen]);
 
-  /* keep the active tab scrolled into view in the (mobile) tab strip */
-  const tabsRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const container = tabsRef.current;
-    const el = container?.querySelector<HTMLElement>(`[data-tab="${tab}"]`);
-    if (!container || !el) return;
-    const target = el.offsetLeft - container.clientWidth / 2 + el.clientWidth / 2;
-    container.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
-  }, [tab]);
-
   const [filter, setFilter] = useState<"all" | BookingStatus>("all");
   const [query, setQuery] = useState("");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
@@ -752,11 +742,11 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
       <header className="sticky top-0 z-[70] border-b border-[var(--line-soft)] bg-[rgba(255,255,255,0.92)] backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:h-16 sm:gap-4 md:px-8">
           {/* brand — tapping it returns to the site */}
-          <button onClick={onExit} className="flex min-w-0 items-center gap-2.5 text-left" title="Back to the website">
-            <IconAperture width={22} height={22} className="shrink-0 text-[var(--amber)] sm:h-6 sm:w-6" />
+          <button onClick={onExit} className="flex min-w-0 items-center gap-3 text-left" title="Back to the website">
+            <IconAperture width={24} height={24} className="shrink-0 text-[var(--amber)]" />
             <span className="min-w-0 leading-none">
-              <span className="font-display block truncate text-lg tracking-[0.08em] sm:text-2xl">IMAGINE</span>
-              <span className="mt-0.5 hidden font-mono text-[8.5px] tracking-[0.3em] text-[var(--muted)] sm:block">STUDIO DESK</span>
+              <span className="font-display block truncate text-2xl tracking-[0.08em]">IMAGINE</span>
+              <span className="mt-0.5 block font-mono text-[8.5px] tracking-[0.3em] text-[var(--muted)]">STUDIO DESK</span>
             </span>
           </button>
 
@@ -777,10 +767,13 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
           />
 
           <div className="flex shrink-0 items-center gap-2 sm:ml-0">
-            {/* View site — compact solid */}
-            <button onClick={onExit} className="btn-solid !gap-1.5 !px-3 !py-2 !text-xs sm:!px-4">
-              <IconBack width={14} height={14} />
-              <span className="sm:hidden">Site</span>
+            {/* View site — same square footprint as sign-out / menu on mobile */}
+            <button
+              onClick={onExit}
+              className="flex h-9 w-9 items-center justify-center border border-[var(--line)] text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] sm:h-auto sm:w-auto sm:gap-2 sm:px-3.5 sm:py-2 sm:text-xs sm:font-medium"
+              title="View site"
+            >
+              <IconBack width={15} height={15} />
               <span className="hidden sm:inline">View site</span>
             </button>
 
@@ -860,41 +853,31 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
           </p>
         </div>
 
-        {/* tabs — a single scrollable strip (wraps to one row on desktop) */}
-        <div className="relative mt-8">
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[var(--bg)] to-transparent sm:hidden" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-[var(--bg)] to-transparent sm:hidden" />
-          <div ref={tabsRef} className="scrollbar-none -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-            {TABS.map((t) => {
-              const active = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  data-tab={t.id}
-                  onClick={() => setTab(t.id)}
-                  className={`relative flex shrink-0 items-center gap-2 border px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase transition-all duration-200 sm:px-4 sm:py-2.5 sm:text-[11px] ${
-                    active
-                      ? "border-[var(--amber)] bg-[var(--amber)] text-white shadow-[0_10px_24px_-14px_rgba(224,164,88,0.9)]"
-                      : "border-[var(--line)] bg-white text-[var(--muted)] hover:-translate-y-0.5 hover:border-[var(--amber)] hover:text-[var(--ink)]"
-                  }`}
-                >
-                  {t.label}
-                  <span
-                    className={`border px-1.5 py-0.5 text-[9px] ${
-                      active ? "border-white/40 bg-white/15 text-white" : "border-[var(--line)] text-[var(--dim)]"
-                    }`}
-                  >
-                    {tabCount[t.id]}
+        {/* tabs */}
+        <div className="mt-8 flex flex-wrap gap-2 border-b border-[var(--line-soft)] pb-px">
+          {TABS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`relative flex items-center gap-2 px-4 py-2.5 font-mono text-[11px] tracking-[0.18em] uppercase transition-all duration-300 ${
+                  active ? "text-[var(--amber)]" : "text-[var(--muted)] hover:text-[var(--ink)]"
+                }`}
+              >
+                {t.label}
+                <span className={`border px-1.5 py-0.5 text-[9px] ${active ? "border-[var(--amber)]/60 bg-[rgba(13,127,194,0.08)]" : "border-[var(--line)]"}`}>
+                  {tabCount[t.id]}
+                </span>
+                {t.id === "bookings" && unseenCount > 0 && !active && (
+                  <span className="pulse-dot absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--ember)] px-1 font-mono text-[9px] font-bold text-white">
+                    {unseenCount > 9 ? "9+" : unseenCount}
                   </span>
-                  {t.id === "bookings" && unseenCount > 0 && !active && (
-                    <span className="pulse-dot absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--ember)] px-1 font-mono text-[9px] font-bold text-white">
-                      {unseenCount > 9 ? "9+" : unseenCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                )}
+                {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-[var(--amber)]" />}
+              </button>
+            );
+          })}
         </div>
 
         <div className="mt-8">
