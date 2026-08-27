@@ -253,6 +253,14 @@ export const IconBack = (p: P) => (
   </S>
 );
 
+export const IconDots = (p: P) => (
+  <S {...p}>
+    <circle cx="12" cy="5.5" r="1.1" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="18.5" r="1.1" fill="currentColor" stroke="none" />
+  </S>
+);
+
 export const IconLock = (p: P) => (
   <S {...p}>
     <rect x="5" y="10.5" width="14" height="10" rx="1.5" />

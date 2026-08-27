@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 
 import { hasRecoveryInUrl } from "../lib/supabase";
 import { emailNotificationsEnabled, sendTestBookingEmails } from "../lib/notify";
@@ -11,6 +11,7 @@ import {
   IconBell,
   IconCalendar,
   IconCheck,
+  IconDots,
   IconDownload,
   IconEye,
   IconEyeOff,
@@ -529,6 +530,52 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 }
 
 /* ————————————————— DASHBOARD ————————————————— */
+/** Mobile overflow menu for secondary desk actions. */
+function MoreMenu({ items }: { items: { icon: ReactNode; label: string; onClick: () => void; disabled?: boolean }[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+  return (
+    <div className="relative sm:hidden" ref={ref}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`flex h-9 w-9 items-center justify-center border transition-colors ${
+          open ? "border-[var(--amber)] text-[var(--amber)]" : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--amber)] hover:text-[var(--amber)]"
+        }`}
+        aria-label="More actions"
+        aria-expanded={open}
+      >
+        <IconDots width={16} height={16} />
+      </button>
+      {open && (
+        <div className="pop-in absolute right-0 top-full z-[75] mt-2 w-52 divide-y divide-[var(--line-soft)] border border-[var(--line)] bg-white shadow-[0_24px_50px_-20px_rgba(18,42,62,0.45)]">
+          {items.map((it) => (
+            <button
+              key={it.label}
+              disabled={it.disabled}
+              onClick={() => {
+                it.onClick();
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-xs font-medium text-[var(--ink)] transition-colors hover:bg-[rgba(13,127,194,0.06)] disabled:cursor-default disabled:opacity-50"
+            >
+              <span className="text-[var(--muted)]">{it.icon}</span>
+              {it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Dashboard({ onExit }: { onExit: () => void }) {
   const { bookings, setBookingStatus, removeBooking, setBookingDeposit, reviews, team, frames, posts, deliveries, logout, toast, cloud, syncError, content, unseenCount, markSeen, requestNotifyPermission, payments } = useStore();
   const pkgOf = (id: string) => content.packages.find((p) => p.id === id);
@@ -538,6 +585,17 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
   useEffect(() => {
     if (tab === "bookings") markSeen();
   }, [tab, markSeen]);
+
+  /* keep the active tab scrolled into view in the (mobile) tab strip */
+  const tabsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = tabsRef.current;
+    const el = container?.querySelector<HTMLElement>(`[data-tab="${tab}"]`);
+    if (!container || !el) return;
+    const target = el.offsetLeft - container.clientWidth / 2 + el.clientWidth / 2;
+    container.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+  }, [tab]);
+
   const [filter, setFilter] = useState<"all" | BookingStatus>("all");
   const [query, setQuery] = useState("");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
@@ -562,6 +620,43 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
     else if (res.studio) toast("Studio alert sent, but the client email failed — check the template's To Email field.", "err");
     else toast("Test emails failed — check your EmailJS templates and keys.", "err");
   };
+
+  /* ask the browser for notification permission (shared by desktop button + mobile menu) */
+  const enableAlerts = () => {
+    requestNotifyPermission();
+    window.setTimeout(() => {
+      if (typeof Notification !== "undefined") {
+        setNotifyPerm(Notification.permission);
+        if (Notification.permission === "granted") toast("Desktop alerts on — we'll ping you on new bookings.");
+        if (Notification.permission === "denied") toast("Alerts blocked by the browser — the desk badge still works.");
+      }
+    }, 600);
+  };
+
+  /* secondary actions that live inline on desktop but collapse into the ⋯ menu on mobile */
+  const menuItems = [
+    ...(cloud && notifyPerm !== "unsupported"
+      ? [
+          {
+            icon: <IconBell width={14} height={14} />,
+            label: notifyPerm === "granted" ? "Alerts are on" : "Enable alerts",
+            onClick: enableAlerts,
+            disabled: notifyPerm === "granted",
+          },
+        ]
+      : []),
+    ...(emailNotificationsEnabled
+      ? [
+          {
+            icon: <IconMail width={14} height={14} />,
+            label: mailTesting ? "Sending…" : "Test emails",
+            onClick: () => void testEmails(),
+            disabled: mailTesting,
+          },
+        ]
+      : []),
+    { icon: <IconKey width={14} height={14} />, label: "Change password", onClick: () => setPwOpen(true) },
+  ];
 
   const counts = useMemo(
     () => ({
@@ -655,14 +750,17 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
     <div className="min-h-screen pb-24">
       {pwOpen && <ChangePasswordModal onClose={() => setPwOpen(false)} />}
       <header className="sticky top-0 z-[70] border-b border-[var(--line-soft)] bg-[rgba(255,255,255,0.92)] backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center gap-5 px-5 py-3.5 md:px-8">
-          <div className="flex items-center gap-3">
-            <IconAperture width={24} height={24} className="text-[var(--amber)]" />
-            <div className="leading-none">
-              <div className="font-display text-2xl tracking-[0.08em]">IMAGINE</div>
-              <div className="font-mono mt-0.5 text-[8.5px] tracking-[0.3em] text-[var(--muted)]">STUDIO DESK</div>
-            </div>
-          </div>
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:h-16 sm:gap-4 md:px-8">
+          {/* brand — tapping it returns to the site */}
+          <button onClick={onExit} className="flex min-w-0 items-center gap-2.5 text-left" title="Back to the website">
+            <IconAperture width={22} height={22} className="shrink-0 text-[var(--amber)] sm:h-6 sm:w-6" />
+            <span className="min-w-0 leading-none">
+              <span className="font-display block truncate text-lg tracking-[0.08em] sm:text-2xl">IMAGINE</span>
+              <span className="mt-0.5 hidden font-mono text-[8.5px] tracking-[0.3em] text-[var(--muted)] sm:block">STUDIO DESK</span>
+            </span>
+          </button>
+
+          {/* sync status — full pill on desktop, a tiny dot on mobile */}
           <span
             className={`ml-auto hidden items-center gap-2 font-mono text-[10px] tracking-[0.2em] uppercase sm:flex ${
               syncError ? "text-[var(--ember)]" : cloud ? "text-[var(--sage)]" : "text-[var(--dim)]"
@@ -671,59 +769,71 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
             <span className={`pulse-dot h-1.5 w-1.5 rounded-full ${syncError ? "bg-[var(--ember)]" : cloud ? "bg-[var(--sage)]" : "bg-[var(--dim)]"}`} />
             {syncError ? "Sync issue" : cloud ? "Cloud sync · Supabase" : "Local demo mode"}
           </span>
-          <button onClick={onExit} className="btn-ghost !px-4 !py-2 text-sm">
-            <IconBack width={15} height={15} /> View site
-          </button>
-          {emailNotificationsEnabled && (
-            <button
-              onClick={() => void testEmails()}
-              disabled={mailTesting}
-              className="hidden items-center gap-2 border border-[var(--line)] px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] disabled:cursor-wait disabled:opacity-60 sm:flex"
-              title="Send a sample booking through both email templates to verify they work"
-            >
-              <IconMail width={13} height={13} /> {mailTesting ? "Sending…" : "Test emails"}
+          <span
+            className={`pulse-dot ml-auto h-2 w-2 shrink-0 rounded-full sm:hidden ${
+              syncError ? "bg-[var(--ember)]" : cloud ? "bg-[var(--sage)]" : "bg-[var(--dim)]"
+            }`}
+            title={syncError ? "Sync issue" : cloud ? "Cloud sync · Supabase" : "Local demo mode"}
+          />
+
+          <div className="flex shrink-0 items-center gap-2 sm:ml-0">
+            {/* View site — compact solid */}
+            <button onClick={onExit} className="btn-solid !gap-1.5 !px-3 !py-2 !text-xs sm:!px-4">
+              <IconBack width={14} height={14} />
+              <span className="sm:hidden">Site</span>
+              <span className="hidden sm:inline">View site</span>
             </button>
-          )}
-          {cloud && notifyPerm !== "unsupported" && (
-            notifyPerm === "granted" ? (
-              <span className="hidden items-center gap-2 border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.08)] px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--sage)] sm:flex" title="Browser alerts for new bookings are on">
-                <IconBell width={13} height={13} /> Alerts on
-              </span>
-            ) : (
+
+            {/* secondary actions — inline on desktop only */}
+            {emailNotificationsEnabled && (
               <button
-                onClick={() => {
-                  requestNotifyPermission();
-                  window.setTimeout(() => {
-                    if (typeof Notification !== "undefined") {
-                      setNotifyPerm(Notification.permission);
-                      if (Notification.permission === "granted") toast("Desktop alerts on — we'll ping you on new bookings.");
-                      if (Notification.permission === "denied") toast("Alerts blocked by the browser — the desk badge still works.");
-                    }
-                  }, 600);
-                }}
-                className="hidden items-center gap-2 border border-[var(--line)] px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] sm:flex"
-                title="Get a browser notification when a new booking lands"
+                onClick={() => void testEmails()}
+                disabled={mailTesting}
+                className="hidden items-center gap-2 border border-[var(--line)] px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] disabled:cursor-wait disabled:opacity-60 sm:flex"
+                title="Send a sample booking through both email templates to verify they work"
               >
-                <IconBell width={13} height={13} /> Enable alerts
+                <IconMail width={13} height={13} /> {mailTesting ? "Sending…" : "Test emails"}
               </button>
-            )
-          )}
-          <button
-            onClick={() => setPwOpen(true)}
-            className="hidden items-center gap-2 border border-[var(--line)] px-4 py-2 text-sm text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] sm:flex"
-          >
-            <IconKey width={14} height={14} /> Password
-          </button>
-          <button
-            onClick={() => {
-              logout();
-              toast("Signed out — the desk is locked.");
-              onExit();
-            }}
-            className="flex items-center gap-2 border border-[var(--line)] px-4 py-2 text-sm text-[var(--muted)] transition-colors hover:border-[var(--ember)] hover:text-[var(--ember)]"
-          >
-            <IconLogout width={15} height={15} /> Sign out
-          </button>
+            )}
+            {cloud && notifyPerm !== "unsupported" && (
+              notifyPerm === "granted" ? (
+                <span className="hidden items-center gap-2 border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.08)] px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--sage)] sm:flex" title="Browser alerts for new bookings are on">
+                  <IconBell width={13} height={13} /> Alerts on
+                </span>
+              ) : (
+                <button
+                  onClick={enableAlerts}
+                  className="hidden items-center gap-2 border border-[var(--line)] px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] sm:flex"
+                  title="Get a browser notification when a new booking lands"
+                >
+                  <IconBell width={13} height={13} /> Enable alerts
+                </button>
+              )
+            )}
+            <button
+              onClick={() => setPwOpen(true)}
+              className="hidden items-center gap-2 border border-[var(--line)] px-3.5 py-2 text-xs font-medium text-[var(--muted)] transition-colors hover:border-[var(--amber)] hover:text-[var(--amber)] sm:flex"
+            >
+              <IconKey width={13} height={13} /> Password
+            </button>
+
+            {/* secondary actions — collapsed into a ⋯ menu on mobile */}
+            <MoreMenu items={menuItems} />
+
+            {/* Sign out — icon-only on mobile, labelled on desktop */}
+            <button
+              onClick={() => {
+                logout();
+                toast("Signed out — the desk is locked.");
+                onExit();
+              }}
+              className="flex h-9 w-9 items-center justify-center border border-[var(--line)] text-[var(--muted)] transition-colors hover:border-[var(--ember)] hover:text-[var(--ember)] sm:h-auto sm:w-auto sm:gap-2 sm:px-3.5 sm:py-2 sm:text-xs sm:font-medium"
+              title="Sign out"
+            >
+              <IconLogout width={15} height={15} />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -750,31 +860,41 @@ export function Dashboard({ onExit }: { onExit: () => void }) {
           </p>
         </div>
 
-        {/* tabs */}
-        <div className="mt-8 flex flex-wrap gap-2 border-b border-[var(--line-soft)] pb-px">
-          {TABS.map((t) => {
-            const active = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`relative flex items-center gap-2 px-4 py-2.5 font-mono text-[11px] tracking-[0.18em] uppercase transition-all duration-300 ${
-                  active ? "text-[var(--amber)]" : "text-[var(--muted)] hover:text-[var(--ink)]"
-                }`}
-              >
-                {t.label}
-                <span className={`border px-1.5 py-0.5 text-[9px] ${active ? "border-[var(--amber)]/60 bg-[rgba(13,127,194,0.08)]" : "border-[var(--line)]"}`}>
-                  {tabCount[t.id]}
-                </span>
-                {t.id === "bookings" && unseenCount > 0 && !active && (
-                  <span className="pulse-dot absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--ember)] px-1 font-mono text-[9px] font-bold text-white">
-                    {unseenCount > 9 ? "9+" : unseenCount}
+        {/* tabs — a single scrollable strip (wraps to one row on desktop) */}
+        <div className="relative mt-8">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-[var(--bg)] to-transparent sm:hidden" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-[var(--bg)] to-transparent sm:hidden" />
+          <div ref={tabsRef} className="scrollbar-none -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+            {TABS.map((t) => {
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  data-tab={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={`relative flex shrink-0 items-center gap-2 border px-3.5 py-2 font-mono text-[10px] tracking-[0.16em] uppercase transition-all duration-200 sm:px-4 sm:py-2.5 sm:text-[11px] ${
+                    active
+                      ? "border-[var(--amber)] bg-[var(--amber)] text-white shadow-[0_10px_24px_-14px_rgba(224,164,88,0.9)]"
+                      : "border-[var(--line)] bg-white text-[var(--muted)] hover:-translate-y-0.5 hover:border-[var(--amber)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  {t.label}
+                  <span
+                    className={`border px-1.5 py-0.5 text-[9px] ${
+                      active ? "border-white/40 bg-white/15 text-white" : "border-[var(--line)] text-[var(--dim)]"
+                    }`}
+                  >
+                    {tabCount[t.id]}
                   </span>
-                )}
-                {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-[var(--amber)]" />}
-              </button>
-            );
-          })}
+                  {t.id === "bookings" && unseenCount > 0 && !active && (
+                    <span className="pulse-dot absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--ember)] px-1 font-mono text-[9px] font-bold text-white">
+                      {unseenCount > 9 ? "9+" : unseenCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="mt-8">
