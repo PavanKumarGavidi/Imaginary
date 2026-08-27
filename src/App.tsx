@@ -12,6 +12,7 @@ import Footer from "./components/Footer";
 import { Dashboard, LoginPage } from "./components/Admin";
 import { JournalListPage, JournalPostPage } from "./components/Journal";
 import DeliveryPage from "./components/Delivery";
+import DepositPage from "./components/DepositPage";
 import PaymentSuccess from "./components/PaymentSuccess";
 import QuickDock from "./components/QuickDock";
 import { IconAperture } from "./components/Icons";
@@ -30,6 +31,11 @@ const routeFromHash = (): Route => {
   const h = window.location.hash;
   if (h.startsWith("#/desk")) return { view: "admin", param: null };
   if (h.startsWith("#/staff") || h.startsWith("#/login")) return { view: "login", param: null };
+  if (h.startsWith("#/payment/")) {
+    const seg = h.slice("#/payment/".length).split("?")[0];
+    if (seg === "success" || seg === "canceled" || seg === "") return { view: "payment", param: null };
+    return { view: "payment", param: decodeURIComponent(seg) };
+  }
   if (h.startsWith("#/payment")) return { view: "payment", param: null };
   if (h.startsWith("#/journal/")) return { view: "post", param: decodeURIComponent(h.slice("#/journal/".length)) };
   if (h.startsWith("#/journal")) return { view: "journal", param: null };
@@ -49,6 +55,8 @@ const hashFor = (view: View, param: string | null): string => {
       return `#/journal/${param ?? ""}`;
     case "delivery":
       return `#/delivery/${param ?? ""}`;
+    case "payment":
+      return param ? `#/payment/${param}` : "#/payment/success";
     default:
       return "";
   }
@@ -163,6 +171,10 @@ function Shell() {
             : { title: "Journal — Imagine Studio", desc: baseDesc, type: "website", url: `${origin}#/journal` };
         case "delivery":
           return { title: dlv ? `${dlv.title} — Private Gallery · Imagine` : "Private Gallery — Imagine", desc: "A private photo delivery from Imagine Studio.", type: "website", url: param ? `${origin}#/delivery/${param}` : origin };
+        case "payment":
+          return param
+            ? { title: `Secure deposit · ${param} — Imagine`, desc: "Pay your Imagine studio deposit securely with Stripe.", type: "website", url: `${origin}#/payment/${param}` }
+            : { title: "Payment — Imagine", desc: "Your Imagine Studio payment confirmation.", type: "website", url: `${origin}#/payment/success` };
         default:
           return { title: base, desc: baseDesc, type: "website", url: origin };
       }
@@ -233,7 +245,7 @@ function Shell() {
       {view === "journal" && <JournalListPage />}
       {view === "post" && <JournalPostPage slug={param ?? ""} />}
       {view === "delivery" && <DeliveryPage id={param ?? ""} />}
-      {view === "payment" && <PaymentSuccess />}
+      {view === "payment" && (param ? <DepositPage bookingRef={param} /> : <PaymentSuccess />)}
     </div>
   );
 }

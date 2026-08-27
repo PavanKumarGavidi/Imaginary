@@ -5,7 +5,6 @@ import type { Booking as BookingType } from "../store";
 import { useStore } from "../store";
 import { supabase } from "../lib/supabase";
 import { emailNotificationsEnabled, sendBookingEmails } from "../lib/notify";
-import DepositModal from "./DepositModal";
 import { Reveal } from "./ui";
 import { IconAperture, IconArrow, IconCalendar, IconCheck, IconClock, IconLock, IconMail, IconPhone, IconPin, IconUsers } from "./Icons";
 
@@ -46,15 +45,28 @@ export default function BookingSection() {
   const [sending, setSending] = useState(false);
   const [takenMap, setTakenMap] = useState<Record<string, string[]>>({});
   const [checkingSlots, setCheckingSlots] = useState(false);
-  /* when set, the on-site deposit payment panel is open */
-  const [depositOpen, setDepositOpen] = useState(false);
   /* shown when the booking couldn't be saved to the studio ledger */
   const [saveErr, setSaveErr] = useState("");
 
-  /* Open the on-site Stripe payment panel for the 30% deposit. */
+  /* Open the dedicated secure-checkout page for the 30% deposit. */
   const startCheckout = (ref: string) => {
     sessionStorage.setItem("imagine_last_booking_ref", ref);
-    setDepositOpen(true);
+    if (submitted) {
+      sessionStorage.setItem(
+        "imagine_deposit_booking",
+        JSON.stringify({
+          ref: submitted.ref,
+          name: submitted.name,
+          email: submitted.email,
+          session: submitted.session,
+          packageId: submitted.packageId,
+          date: submitted.date,
+          time: submitted.time,
+          guests: submitted.guests,
+        })
+      );
+    }
+    window.location.hash = `#/payment/${ref}`;
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -309,38 +321,6 @@ export default function BookingSection() {
                   const p = pkgById(submitted.packageId);
                   if (!p || p.price <= 0) return null;
                   const deposit = Math.round(p.price * 0.3);
-
-                  /* ——— deposit already paid → calm "locked in" summary, no payment CTA ——— */
-                  if (submitted.depositPaid) {
-                    return (
-                      <div className="pop-in mt-6 border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.06)] p-5">
-                        <div className="flex items-start gap-3.5">
-                          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--sage)]/60 bg-[rgba(47,138,99,0.12)] text-[var(--sage)]">
-                            <IconCheck width={16} height={16} />
-                          </span>
-                          <div>
-                            <div className="font-display text-xl text-[var(--ink)]">Deposit paid — your date is locked.</div>
-                            <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-                              <span className="font-semibold text-[var(--ink)]">${deposit}</span> received via Stripe · balance of{" "}
-                              <span className="font-semibold text-[var(--ink)]">${p.price - deposit}</span> due 48 hours before the
-                              session. Your call sheet lands in your inbox within 24 hours.
-                            </p>
-                            <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-[9px] tracking-[0.16em] uppercase">
-                              <span className="flex items-center gap-1.5 border border-[var(--sage)]/50 bg-[rgba(47,138,99,0.1)] px-2.5 py-1 text-[var(--sage)]">
-                                <IconCheck width={10} height={10} /> Deposit
-                              </span>
-                              <span className="text-[var(--dim)]">→</span>
-                              <span className="border border-[var(--line)] px-2.5 py-1 text-[var(--muted)]">Call sheet · 24h</span>
-                              <span className="text-[var(--dim)]">→</span>
-                              <span className="border border-[var(--line)] px-2.5 py-1 text-[var(--muted)]">Shoot day</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  /* ——— unpaid → the lock-it-now deposit CTA ——— */
                   return (
                     <div className="mt-6 border border-[var(--sage)]/40 bg-[rgba(47,138,99,0.06)] p-5">
                       <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
@@ -355,7 +335,7 @@ export default function BookingSection() {
                         </button>
                       </div>
                       <p className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)] sm:justify-start">
-                        <IconLock width={11} height={11} className="text-[var(--sage)]" /> Pay right here — secure Stripe card form, no redirect
+                        <IconLock width={11} height={11} className="text-[var(--sage)]" /> Secure Stripe checkout opens on its own page
                       </p>
                     </div>
                   );
@@ -393,19 +373,6 @@ export default function BookingSection() {
                   </button>
                   <a href="#top" className="btn-ghost">Back to top</a>
                 </div>
-
-                {depositOpen && (() => {
-                  const p = pkgById(submitted.packageId);
-                  if (!p || p.price <= 0) return null;
-                  return (
-                    <DepositModal
-                      booking={submitted}
-                      pkg={p}
-                      onClose={() => setDepositOpen(false)}
-                      onPaid={() => setSubmitted((s) => (s ? { ...s, depositPaid: true } : s))}
-                    />
-                  );
-                })()}
               </div>
             ) : (
               <form onSubmit={onSubmit} noValidate className="border border-[var(--line)] bg-[var(--panel)] p-8 md:p-10">
