@@ -54,13 +54,6 @@ export default function Hero() {
       {/* shutter flash on arrival */}
       {!reduced && flash && <div className="flash-overlay pointer-events-none fixed inset-0 z-[85] bg-white" />}
 
-      {/* subtle animated background */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-[rgba(13,127,194,0.03)] via-transparent to-[rgba(224,164,88,0.02)]" />
-        <div className="absolute left-1/4 top-1/3 h-96 w-96 animate-pulse rounded-full bg-[rgba(13,127,194,0.04)] blur-3xl" />
-        <div className="absolute right-1/4 bottom-1/3 h-96 w-96 animate-pulse rounded-full bg-[rgba(224,164,88,0.03)] blur-3xl" style={{ animationDelay: "1s" }} />
-      </div>
-
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <div className="grid items-center gap-14 lg:grid-cols-12 lg:gap-8">
           {/* ——— left: statement ——— */}
@@ -78,7 +71,7 @@ export default function Hero() {
               </span>
               <span className="mask-line">
                 <span style={{ animationDelay: "0.2s" }}>
-                  <Accent text={hero.l2} emClass="italic text-[var(--amber)] drop-shadow-[0_0_12px_rgba(224,164,88,0.3)]" />
+                  <Accent text={hero.l2} emClass="italic text-[var(--amber)]" />
                 </span>
               </span>
               <span className="mask-line">
@@ -93,40 +86,13 @@ export default function Hero() {
             <div className="mt-9 flex items-center gap-3 sm:gap-4">
               <a
                 href="#book"
-                className="btn-solid group relative max-sm:flex-1 max-sm:justify-center max-sm:px-2.5 max-sm:py-2.5 max-sm:text-[13px]"
+                className="btn-solid max-sm:flex-1 max-sm:justify-center max-sm:px-2.5 max-sm:py-2.5 max-sm:text-[13px]"
               >
-                <span className="absolute inset-0 -z-10 bg-gradient-to-r from-[var(--amber)] to-[var(--amber-soft)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                Book a session <IconArrow width={17} height={17} className="transition-transform duration-300 group-hover:translate-x-1 max-sm:h-4 max-sm:w-4" />
+                Book a session <IconArrow width={17} height={17} className="max-sm:h-4 max-sm:w-4" />
               </a>
-              <a href="#work" className="btn-ghost group max-sm:flex-1 max-sm:justify-center max-sm:px-2.5 max-sm:py-2.5 max-sm:text-[13px]">
+              <a href="#work" className="btn-ghost max-sm:flex-1 max-sm:justify-center max-sm:px-2.5 max-sm:py-2.5 max-sm:text-[13px]">
                 Browse the archive
-                <IconArrow width={17} height={17} className="transition-transform duration-300 group-hover:translate-x-1 max-sm:h-4 max-sm:w-4" />
               </a>
-            </div>
-
-            {/* trust signals */}
-            <div className="mt-10 flex flex-wrap items-center gap-6 border-t border-[var(--line-soft)] pt-6">
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-8 w-8 rounded-full border-2 border-white bg-gradient-to-br from-[var(--amber)] to-[var(--amber-soft)]" />
-                  ))}
-                </div>
-                <div className="ml-2">
-                  <div className="font-display text-lg leading-none text-[var(--ink)]">2,400+</div>
-                  <div className="font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)]">Sessions delivered</div>
-                </div>
-              </div>
-              <div className="h-8 w-px bg-[var(--line-soft)]" />
-              <div>
-                <div className="font-display text-lg leading-none text-[var(--ink)]">14 years</div>
-                <div className="font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)]">Behind the lens</div>
-              </div>
-              <div className="h-8 w-px bg-[var(--line-soft)]" />
-              <div>
-                <div className="font-display text-lg leading-none text-[var(--ink)]">96%</div>
-                <div className="font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)]">Rebook rate</div>
-              </div>
             </div>
 
             {/* EXIF strip */}
@@ -146,7 +112,7 @@ export default function Hero() {
           {/* ——— right: featured frame ——— */}
           <div className="relative lg:col-span-5">
             <RotatingBadge />
-            <div className="group relative border-2 border-[var(--line)] bg-[var(--panel)] p-3 shadow-[0_30px_60px_-35px_rgba(18,42,62,0.35)] transition-all duration-500 hover:shadow-[0_40px_80px_-40px_rgba(18,42,62,0.45)]">
+            <div className="group relative border border-[var(--line)] bg-[var(--panel)] p-3 shadow-[0_30px_60px_-35px_rgba(18,42,62,0.35)]">
               {/* viewfinder brackets */}
               <span className="vf-bracket left-0 top-0 border-l-2 border-t-2" />
               <span className="vf-bracket right-0 top-0 border-r-2 border-t-2" />
@@ -156,22 +122,21 @@ export default function Hero() {
               <div className="relative overflow-hidden">
                 <SafeImg
                   src={sitePhotos.hero}
-                  alt="Low-key studio portrait lit with soft daylight"
+                  alt="Professional photography studio portrait"
                   className="kenburns aspect-[4/3] w-full object-cover"
                   loading="eager"
                 />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(18,42,62,0.6)] via-transparent to-transparent" />
-                <div className="absolute left-3 top-3 flex items-center gap-2 border border-white/30 bg-[rgba(18,42,62,0.6)] px-2 py-1 backdrop-blur-sm">
-                  <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--amber)]" />
-                  <span className="font-mono text-[9px] tracking-[0.2em] text-[var(--photo-ink)]">PORTRAIT 04 — SKY SERIES</span>
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(18,42,62,0.5),transparent_45%)]" />
+                <div className="absolute left-3 top-3 font-mono text-[10px] tracking-[0.2em] text-[var(--photo-ink)]/90">
+                  PORTRAIT 04 — SKY SERIES
                 </div>
-                <div className="absolute bottom-3 right-3 border border-white/30 bg-[rgba(18,42,62,0.6)] px-2 py-1 backdrop-blur-sm">
-                  <span className="font-mono text-[9px] tracking-[0.2em] text-[var(--photo-ink)]">FR 01/24</span>
+                <div className="absolute bottom-3 right-3 border border-white/30 px-2 py-1 font-mono text-[10px] tracking-[0.2em] text-[var(--photo-ink)]/90">
+                  FR 01/24
                 </div>
               </div>
 
               <div className="flex items-center justify-between px-1 pb-1 pt-3">
-                <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--muted)]">In-house print · 16×20”</span>
+                <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--muted)]">In-house print · 16×20"</span>
                 <span className="font-mono text-[10px] tracking-[0.22em] text-[var(--amber)]">ƒ IMAGINE</span>
               </div>
             </div>

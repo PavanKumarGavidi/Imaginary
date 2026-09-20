@@ -2,12 +2,12 @@ import type { Booking, TeamMember } from "./store";
 
 /* ————— imagery ————— */
 export const IMG = {
-  hero: "https://image.qwenlm.ai/generated-images/1d06e80a-d9ab-413a-b0e5-3708708d9646/_result.png",
-  studio: "https://image.qwenlm.ai/generated-images/dd7371bb-a1d8-4fd5-8305-de563b51f96d/_result.png",
-  bridal: "https://image.qwenlm.ai/generated-images/36926275-fe9f-4de6-a9fb-d3ac749133f3/_result.png",
-  fashion: "https://image.qwenlm.ai/generated-images/b9274cf3-727c-46d5-94a7-7f681624a1d4/_result.png",
+  hero: "https://image.qwenlm.ai/generated-images/cb0b4e6f-e63f-4da2-abd4-f6a2c3a7eb78/_result.png",
+  studio: "https://image.qwenlm.ai/generated-images/7eb6c222-303d-4ab1-9037-9314d75f9e17/_result.png",
+  bridal: "https://image.qwenlm.ai/generated-images/cc5e00f4-98e7-44d2-8582-1bd60c5213af/_result.png",
+  fashion: "https://image.qwenlm.ai/generated-images/b5d7039a-b720-453d-abaf-e957c7c9b03a/_result.png",
   family: "https://image.qwenlm.ai/generated-images/c0f3f69c-0031-46e8-a054-2687efc567e1/_result.png",
-  product: "https://image.qwenlm.ai/generated-images/e927488a-0c87-4d25-9ca1-11570c7eabba/_result.png",
+  product: "https://image.qwenlm.ai/generated-images/63c9be72-87aa-444a-aff3-0299bad1b83b/_result.png",
   maternity: "https://image.qwenlm.ai/generated-images/f3d0d3de-14ff-4205-b6d5-106b50f7af0a/_result.png",
   headshot: "https://image.qwenlm.ai/generated-images/16327cce-cd49-4685-bc77-6398054f6aba/_result.png",
   event: "https://image.qwenlm.ai/generated-images/305e0060-0f96-473a-9598-a0550501f688/_result.png",
