@@ -95,36 +95,6 @@ export default function Hero() {
               </a>
             </div>
 
-            {/* trust signals */}
-            <div className="mt-10 flex flex-wrap items-center gap-6 border-t border-[var(--line-soft)] pt-6">
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-8 w-8 rounded-full border-2 border-white bg-gradient-to-br from-[var(--amber)] to-[var(--amber-soft)]" />
-                  ))}
-                </div>
-                <div className="ml-2">
-                  <div className="font-display text-lg leading-none text-[var(--ink)]">2,400+</div>
-                  <div className="font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)]">Sessions delivered</div>
-                </div>
-              </div>
-              <div className="h-8 w-px bg-[var(--line-soft)]" />
-              <div>
-                <div className="font-display text-lg leading-none text-[var(--ink)]">14 years</div>
-                <div className="font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)]">Behind the lens</div>
-              </div>
-              <div className="h-8 w-px bg-[var(--line-soft)]" />
-              <div>
-                <div className="font-display text-lg leading-none text-[var(--ink)]">38</div>
-                <div className="font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)]">Awards & press</div>
-              </div>
-              <div className="h-8 w-px bg-[var(--line-soft)]" />
-              <div>
-                <div className="font-display text-lg leading-none text-[var(--ink)]">96%</div>
-                <div className="font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)]">Clients who rebook</div>
-              </div>
-            </div>
-
             {/* EXIF strip */}
             <div className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--line-soft)] pt-5 font-mono text-[11px] tracking-[0.14em] text-[var(--dim)]">
               <span className="flex items-center gap-2 text-[var(--amber)]">
