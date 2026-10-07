@@ -3,9 +3,11 @@ import type { FormEvent } from "react";
 import { TIME_SLOTS } from "../data";
 import type { Booking as BookingType } from "../store";
 import { useStore } from "../store";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { supabase } from "../lib/supabase";
 import { emailNotificationsEnabled, sendBookingEmails } from "../lib/notify";
 import { Reveal } from "./ui";
+import InlinePayment from "./InlinePayment";
 import { IconAperture, IconArrow, IconCalendar, IconCheck, IconClock, IconLock, IconMail, IconPhone, IconPin, IconUsers } from "./Icons";
 
 const fmtDate = (d: string) =>
@@ -37,6 +39,7 @@ const EMPTY: FormState = {
 
 export default function BookingSection() {
   const { addBooking, prefill, toast, content, bookings, cloud } = useStore();
+  const isMobile = useIsMobile();
   const ct = content.contact;
   const pkgById = (id: string) => content.packages.find((p) => p.id === id);
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -48,7 +51,7 @@ export default function BookingSection() {
   /* shown when the booking couldn't be saved to the studio ledger */
   const [saveErr, setSaveErr] = useState("");
 
-  /* Open the dedicated secure-checkout page for the 30% deposit. */
+  /* Open the dedicated secure-checkout page for the 30% deposit (mobile only). */
   const startCheckout = (ref: string) => {
     sessionStorage.setItem("imagine_last_booking_ref", ref);
     if (submitted) {
@@ -66,7 +69,10 @@ export default function BookingSection() {
         })
       );
     }
-    window.location.hash = `#/payment/${ref}`;
+    // Only navigate on mobile; desktop will show inline payment
+    if (isMobile) {
+      window.location.hash = `#/payment/${ref}`;
+    }
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -321,24 +327,31 @@ export default function BookingSection() {
                   const p = pkgById(submitted.packageId);
                   if (!p || p.price <= 0) return null;
                   const deposit = Math.round(p.price * 0.3);
-                  return (
-                    <div className="mt-6 border border-[var(--sage)]/40 bg-[rgba(47,138,99,0.06)] p-5">
-                      <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
-                        <div>
-                          <div className="font-display text-xl text-[var(--ink)]">Skip the wait — lock it now.</div>
-                          <p className="mt-0.5 text-xs leading-relaxed text-[var(--muted)]">
-                            Pay the 30% deposit (${deposit}) and your date is confirmed the moment it clears. Otherwise we confirm within 24h.
-                          </p>
+                  
+                  // Mobile: show button that navigates to payment page
+                  if (isMobile) {
+                    return (
+                      <div className="mt-6 border border-[var(--sage)]/40 bg-[rgba(47,138,99,0.06)] p-5">
+                        <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
+                          <div>
+                            <div className="font-display text-xl text-[var(--ink)]">Skip the wait — lock it now.</div>
+                            <p className="mt-0.5 text-xs leading-relaxed text-[var(--muted)]">
+                              Pay the 30% deposit (${deposit}) and your date is confirmed the moment it clears. Otherwise we confirm within 24h.
+                            </p>
+                          </div>
+                          <button onClick={() => startCheckout(submitted.ref)} className="btn-solid shrink-0">
+                            Pay ${deposit} deposit <IconArrow width={15} height={15} />
+                          </button>
                         </div>
-                        <button onClick={() => startCheckout(submitted.ref)} className="btn-solid shrink-0">
-                          Pay ${deposit} deposit <IconArrow width={15} height={15} />
-                        </button>
+                        <p className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)] sm:justify-start">
+                          <IconLock width={11} height={11} className="text-[var(--sage)]" /> Secure Stripe checkout opens on its own page
+                        </p>
                       </div>
-                      <p className="mt-3 flex items-center justify-center gap-1.5 font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--dim)] sm:justify-start">
-                        <IconLock width={11} height={11} className="text-[var(--sage)]" /> Secure Stripe checkout opens on its own page
-                      </p>
-                    </div>
-                  );
+                    );
+                  }
+                  
+                  // Desktop: show inline payment form
+                  return <InlinePayment booking={submitted} pkg={p} onSuccess={() => {}} />;
                 })()}
 
                 <dl className="mt-8 grid grid-cols-1 gap-x-8 gap-y-4 text-sm sm:grid-cols-2">
