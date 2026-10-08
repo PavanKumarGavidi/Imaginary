@@ -308,3 +308,73 @@ smoke test of the whole deployment and reports pass / check / fail per item:
 Each failing row shows the exact error **and the fix** (which SQL to run, which
 secret to set, etc.). Run it after any deploy, SQL change or new feature — it
 verifies exactly what your visitors depend on.
+
+### 📊 Google Analytics 4
+
+Track visitor behavior, page views, and conversion events.
+
+**Setup:**
+1. Go to https://analytics.google.com → Admin → Data Streams → Add stream → Web
+2. Copy the **Measurement ID** (starts with `G-`)
+3. Add to `.env.local`:
+   ```
+   VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+   ```
+4. Rebuild and redeploy
+
+**Tracked events:**
+- Page views on every route change
+- Booking submissions (with package and amount)
+- Payment completions
+- Custom events via `trackEvent()` in `src/lib/analytics.ts`
+
+Leave the env var empty to disable analytics.
+
+### 🔍 Google Search Console
+
+Verify site ownership and submit your sitemap for better indexing.
+
+**Setup:**
+1. Go to https://search.google.com/search-console → Add property
+2. Choose **"URL prefix"** method → enter `https://yourdomain.com`
+3. Select **"HTML tag"** verification method
+4. Copy the meta tag content (the long string after `content="..."`)
+5. Add to `.env.local`:
+   ```
+   VITE_GSC_VERIFICATION=your-verification-code
+   ```
+6. Rebuild and redeploy
+7. Return to Search Console and click "Verify"
+
+**Sitemap:**
+- Submit `https://yourdomain.com/sitemap.xml` in Search Console → Sitemaps
+- The sitemap is auto-generated at `public/sitemap.xml`
+
+### 📱 Social Sharing
+
+Journal posts include social sharing buttons for Twitter, Facebook, LinkedIn,
+and Pinterest. On mobile devices, the native share sheet is also available.
+
+Buttons appear automatically below each journal post. No configuration needed.
+
+### 📄 Privacy Policy
+
+A comprehensive privacy policy page is available at `#/privacy` and linked in
+the footer. The policy covers:
+
+- Data collection and usage
+- Photography rights and image usage
+- Third-party services (Supabase, Stripe, EmailJS)
+- User rights and data retention
+- California resident rights (CCPA)
+
+**Customize:** Edit `src/components/PrivacyPolicy.tsx` to match your actual
+business practices, especially the contact information section.
+
+### 🔗 SEO Enhancements
+
+- **Sitemap:** `public/sitemap.xml` lists all public pages
+- **Robots.txt:** `public/robots.txt` guides search engine crawlers
+- **Meta tags:** Dynamic per-page title, description, and Open Graph tags
+- **Canonical URLs:** Prevents duplicate content issues
+- **Structured data:** Ready for schema.org markup (add as needed)

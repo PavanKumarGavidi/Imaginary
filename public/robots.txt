@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://imaginarycapture.netlify.app/sitemap.xml
+
+# Disallow admin area
+Disallow: /#/desk
+Disallow: /#/staff
+Disallow: /#/login
+
+# Disallow private pages
+Disallow: /#/payment/
+Disallow: /#/delivery/

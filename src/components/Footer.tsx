@@ -101,6 +101,9 @@ export default function Footer({ onAdmin }: { onAdmin: () => void }) {
                   {label}
                 </a>
               ))}
+              <a href="#/privacy" className="uline w-fit text-[var(--muted)] transition-colors hover:text-[var(--ink)]">
+                Privacy Policy
+              </a>
             </nav>
             <button
               onClick={onAdmin}
@@ -112,8 +115,13 @@ export default function Footer({ onAdmin }: { onAdmin: () => void }) {
         </div>
 
         <div className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-[var(--line-soft)] pb-24 pt-6 font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--dim)] sm:flex-row sm:items-center sm:pb-6">
-          <span>© 2026 Obscura Studio — All frames reserved</span>
-          <span>Made under tungsten light · Portland, OR</span>
+          <span>© 2026 Imagine Studio — All frames reserved</span>
+          <div className="flex flex-wrap items-center gap-4">
+            <a href="#/privacy" className="uline text-[var(--muted)] transition-colors hover:text-[var(--ink)]">
+              Privacy
+            </a>
+            <span>Made under tungsten light · Portland, OR</span>
+          </div>
         </div>
       </div>
     </footer>

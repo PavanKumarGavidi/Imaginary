@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { StoreProvider, useStore } from "./store";
 import { hasRecoveryInUrl } from "./lib/supabase";
+import { initAnalytics, trackPageView } from "./lib/analytics";
 import Nav from "./components/Nav";
 import Hero from "./components/Hero";
 import { About, Services } from "./components/Sections";
@@ -14,11 +15,12 @@ import { JournalListPage, JournalPostPage } from "./components/Journal";
 import DeliveryPage from "./components/Delivery";
 import DepositPage from "./components/DepositPage";
 import PaymentSuccess from "./components/PaymentSuccess";
+import PrivacyPolicy from "./components/PrivacyPolicy";
 import QuickDock from "./components/QuickDock";
 import { IconAperture } from "./components/Icons";
 import { Toasts } from "./components/ui";
 
-type View = "site" | "login" | "admin" | "journal" | "post" | "delivery" | "payment";
+type View = "site" | "login" | "admin" | "journal" | "post" | "delivery" | "payment" | "privacy";
 
 interface Route {
   view: View;
@@ -40,6 +42,7 @@ const routeFromHash = (): Route => {
   if (h.startsWith("#/journal/")) return { view: "post", param: decodeURIComponent(h.slice("#/journal/".length)) };
   if (h.startsWith("#/journal")) return { view: "journal", param: null };
   if (h.startsWith("#/delivery/")) return { view: "delivery", param: decodeURIComponent(h.slice("#/delivery/".length)) };
+  if (h.startsWith("#/privacy")) return { view: "privacy", param: null };
   return { view: "site", param: null };
 };
 
@@ -57,6 +60,8 @@ const hashFor = (view: View, param: string | null): string => {
       return `#/delivery/${param ?? ""}`;
     case "payment":
       return param ? `#/payment/${param}` : "#/payment/success";
+    case "privacy":
+      return "#/privacy";
     default:
       return "";
   }
@@ -110,6 +115,18 @@ function Shell() {
     setView(v);
     setParam(p);
   };
+
+  /* Initialize Google Analytics on first load */
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
+  /* Track page views on route changes */
+  useEffect(() => {
+    const path = window.location.hash || "/";
+    const title = document.title;
+    trackPageView(path, title);
+  }, [view, param]);
 
   /* browser back/forward between views follows the hash too */
   useEffect(() => {
@@ -175,6 +192,8 @@ function Shell() {
           return param
             ? { title: `Secure deposit · ${param} — Imagine`, desc: "Pay your Imagine studio deposit securely with Stripe.", type: "website", url: `${origin}#/payment/${param}` }
             : { title: "Payment — Imagine", desc: "Your Imagine Studio payment confirmation.", type: "website", url: `${origin}#/payment/success` };
+        case "privacy":
+          return { title: "Privacy Policy — Imagine Studio", desc: "How Imagine Studio handles your personal information and protects your privacy.", type: "website", url: `${origin}#/privacy` };
         default:
           return { title: base, desc: baseDesc, type: "website", url: origin };
       }
@@ -246,6 +265,7 @@ function Shell() {
       {view === "post" && <JournalPostPage slug={param ?? ""} />}
       {view === "delivery" && <DeliveryPage id={param ?? ""} />}
       {view === "payment" && (param ? <DepositPage bookingRef={param} /> : <PaymentSuccess />)}
+      {view === "privacy" && <PrivacyPolicy />}
     </div>
   );
 }
