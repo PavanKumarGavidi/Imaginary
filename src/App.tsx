@@ -4,6 +4,7 @@ import { hasRecoveryInUrl } from "./lib/supabase";
 import { initAnalytics, trackPageView } from "./lib/analytics";
 import Nav from "./components/Nav";
 import Hero from "./components/Hero";
+import FeaturedWork from "./components/FeaturedWork";
 import { About, Services } from "./components/Sections";
 import Gallery from "./components/Gallery";
 import TeamSection from "./components/Team";
@@ -238,6 +239,7 @@ function Shell() {
           <Nav onAdmin={goAdmin} />
           <main>
             <Hero />
+            <FeaturedWork />
             <About />
             <Services onBookSession={(s) => bookWith(s)} />
             <Gallery />
