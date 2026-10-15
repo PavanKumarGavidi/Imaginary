@@ -43,7 +43,7 @@ function CrewCard({ m, index, quarter }: { m: TeamMember; index: number; quarter
     <div
       className={`w-[240px] shrink-0 snap-center [perspective:1200px] ${quarter ? "md:w-[calc((100%-3rem)/4)]" : "md:w-auto"}`}
     >
-      <div className="group relative aspect-[4/5] cursor-pointer transition-transform duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] hover:[transform:rotateY(180deg)]">
+      <div className="group relative aspect-[4/5] cursor-pointer transition-transform duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] hover:[transform:rotateY(180deg)]">
         {/* front — the portrait tile */}
         <div
           className="absolute inset-0 flex flex-col justify-between overflow-hidden p-5 [backface-visibility:hidden]"

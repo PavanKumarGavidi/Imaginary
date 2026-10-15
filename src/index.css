@@ -200,26 +200,36 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 }
 @keyframes rise { to { transform: translateY(0); } }
 
-/* ————— ken burns breathing ————— */
-.kenburns { animation: kenburns 16s ease-in-out infinite alternate; will-change: transform; }
+/* ————— ken burns breathing — optimized for performance ————— */
+.kenburns { 
+  animation: kenburns 20s ease-in-out infinite alternate;
+  will-change: transform;
+  transform: translateZ(0);
+}
 @keyframes kenburns {
   from { transform: scale(1) translate(0, 0); }
-  to { transform: scale(1.09) translate(-1.4%, 1.6%); }
+  to { transform: scale(1.05) translate(-1%, 1%); }
 }
 
-/* ————— marquee ————— */
+/* ————— marquee — optimized for performance ————— */
 .marquee { overflow: hidden; }
 .marquee-track {
   display: flex;
   width: max-content;
   animation: marquee 30s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
 }
 .marquee-track.fast { animation-duration: 22s; }
 .marquee:hover .marquee-track { animation-play-state: paused; }
 @keyframes marquee { to { transform: translateX(-50%); } }
 
-/* ————— misc animation ————— */
-.spin-slow { animation: spin-slow 20s linear infinite; }
+/* ————— misc animation — optimized ————— */
+.spin-slow { 
+  animation: spin-slow 20s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
 @keyframes spin-slow { to { transform: rotate(360deg); } }
 
 .flash-overlay {
@@ -230,7 +240,10 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
   100% { opacity: 0; }
 }
 
-.pulse-dot { animation: pulse-dot 2.2s ease-in-out infinite; }
+.pulse-dot { 
+  animation: pulse-dot 2.2s ease-in-out infinite;
+  will-change: box-shadow;
+}
 @keyframes pulse-dot {
   0%, 100% { box-shadow: 0 0 0 0 rgba(13, 127, 194, 0.45); }
   55% { box-shadow: 0 0 0 7px rgba(13, 127, 194, 0); }

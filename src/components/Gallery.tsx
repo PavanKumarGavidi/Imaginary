@@ -85,19 +85,19 @@ export default function Gallery() {
                     <SafeImg
                       src={g.img}
                       alt={`${g.title} — ${g.cat} photograph by Imagine`}
-                      className="aspect-[4/5] w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.06]"
+                      className="aspect-[4/5] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.06]"
                       loading="lazy"
                     />
-                    {/* frame number */}
-                    <span className="absolute left-3 top-3 border border-white/25 bg-[rgba(18,42,62,0.45)] px-2 py-1 font-mono text-[10px] tracking-[0.22em] text-[var(--photo-ink)]/95 backdrop-blur-sm">
+                    {/* frame number - backdrop-blur only on desktop */}
+                    <span className="absolute left-3 top-3 border border-white/25 bg-[rgba(18,42,62,0.45)] px-2 py-1 font-mono text-[10px] tracking-[0.22em] text-[var(--photo-ink)]/95 backdrop-blur-sm md:backdrop-blur-sm">
                       FR {String(published.findIndex((x) => x.id === g.id) + 1).padStart(2, "0")}
                     </span>
                     <span className="chip absolute right-3 top-3 !border-white/25 bg-[rgba(18,42,62,0.45)] !text-[#8fd0f7] backdrop-blur-sm">
                       {g.cat}
                     </span>
-                    {/* hover wash */}
-                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(18,42,62,0.85),transparent_55%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-4 p-4 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+                    {/* hover wash - optimized duration */}
+                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(18,42,62,0.85),transparent_55%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-4 p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                       <div className="font-display text-2xl tracking-wide text-white">{g.title}</div>
                       <div className="mt-1 flex items-center justify-between">
                         <span className="font-mono text-[10px] tracking-[0.16em] text-[var(--photo-ink)]/75">{g.exif}</span>

@@ -34,6 +34,7 @@ export default function FeaturedWork() {
             <div
               key={frame.id}
               className="group relative overflow-hidden rounded-sm border border-[var(--line)] bg-[var(--panel)] shadow-[0_10px_30px_-15px_rgba(18,42,62,0.2)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_-20px_rgba(18,42,62,0.3)]"
+              style={{ animationDelay: `${index * 100}ms` }}
             >
               {/* Image - lazy loaded for performance */}
               <div className="relative aspect-[4/5] overflow-hidden bg-[var(--bg2)]">
@@ -45,7 +46,7 @@ export default function FeaturedWork() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[rgba(18,42,62,0.7)] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
-                {/* Hover overlay - simplified for mobile */}
+                {/* Hover overlay - optimized */}
                 <div className="absolute inset-0 flex items-end p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100 md:p-6">
                   <div>
                     <div className="font-display text-lg text-white md:text-xl lg:text-2xl">{frame.title}</div>
@@ -55,7 +56,7 @@ export default function FeaturedWork() {
                   </div>
                 </div>
 
-                {/* Category badge */}
+                {/* Category badge - backdrop-blur only on desktop */}
                 <div className="absolute left-3 top-3 md:left-4 md:top-4">
                   <div className="rounded-sm bg-[rgba(18,42,62,0.8)] px-2 py-1 backdrop-blur-sm md:px-3 md:py-1.5">
                     <div className="font-mono text-[9px] tracking-[0.2em] uppercase text-[var(--photo-ink)] md:text-[10px]">
