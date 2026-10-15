@@ -191,49 +191,98 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 }
 .rv.is-in { opacity: 1; transform: translateY(0); }
 
-/* ————— line-mask reveal ————— */
+/* ————— Simple fade-in animation ————— */
+.animate-fade-in {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ————— line-mask reveal (disabled for performance) ————— */
 .mask-line { display: block; overflow: hidden; }
 .mask-line > span {
   display: block;
-  transform: translateY(112%);
-  animation: rise 0.95s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-}
-@keyframes rise { to { transform: translateY(0); } }
-
-/* ————— ken burns breathing ————— */
-.kenburns { animation: kenburns 16s ease-in-out infinite alternate; will-change: transform; }
-@keyframes kenburns {
-  from { transform: scale(1) translate(0, 0); }
-  to { transform: scale(1.09) translate(-1.4%, 1.6%); }
+  opacity: 1;
+  transform: none;
 }
 
-/* ————— marquee ————— */
+/* Only enable mask animation if user prefers motion */
+@media (prefers-reduced-motion: no-preference) {
+  .mask-line.animated > span {
+    transform: translateY(112%);
+    animation: rise 0.95s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  }
+  @keyframes rise { to { transform: translateY(0); } }
+}
+
+/* ————— ken burns (disabled by default) ————— */
+.kenburns {
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .kenburns {
+    animation: kenburns 20s ease-in-out infinite alternate;
+  }
+  @keyframes kenburns {
+    from { transform: scale(1) translate(0, 0); }
+    to { transform: scale(1.05) translate(-1%, 1%); }
+  }
+}
+
+/* ————— marquee (disabled by default) ————— */
 .marquee { overflow: hidden; }
 .marquee-track {
   display: flex;
   width: max-content;
-  animation: marquee 30s linear infinite;
 }
-.marquee-track.fast { animation-duration: 22s; }
-.marquee:hover .marquee-track { animation-play-state: paused; }
-@keyframes marquee { to { transform: translateX(-50%); } }
 
-/* ————— misc animation ————— */
-.spin-slow { animation: spin-slow 20s linear infinite; }
-@keyframes spin-slow { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: no-preference) {
+  .marquee-track {
+    animation: marquee 30s linear infinite;
+  }
+  .marquee-track.fast { animation-duration: 22s; }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+}
+
+/* ————— misc animation (disabled by default) ————— */
+.spin-slow {
+  transform: rotate(0deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spin-slow {
+    animation: spin-slow 20s linear infinite;
+  }
+  @keyframes spin-slow { to { transform: rotate(360deg); } }
+}
 
 .flash-overlay {
-  animation: flashout 0.9s ease-out forwards;
-}
-@keyframes flashout {
-  0% { opacity: 0.85; }
-  100% { opacity: 0; }
+  opacity: 0;
 }
 
-.pulse-dot { animation: pulse-dot 2.2s ease-in-out infinite; }
-@keyframes pulse-dot {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(13, 127, 194, 0.45); }
-  55% { box-shadow: 0 0 0 7px rgba(13, 127, 194, 0); }
+.pulse-dot {
+  /* Static dot without animation */
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pulse-dot {
+    animation: pulse-dot 2.2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(13, 127, 194, 0.45); }
+    55% { box-shadow: 0 0 0 7px rgba(13, 127, 194, 0); }
+  }
 }
 
 .shake { animation: shake 0.45s ease-in-out; }
