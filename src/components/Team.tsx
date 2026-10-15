@@ -43,14 +43,17 @@ function CrewCard({ m, index, quarter }: { m: TeamMember; index: number; quarter
     <div
       className={`w-[240px] shrink-0 snap-center [perspective:1200px] ${quarter ? "md:w-[calc((100%-3rem)/4)]" : "md:w-auto"}`}
     >
-      <div className="group relative aspect-[4/5] cursor-pointer">
+      <div className="group relative aspect-[4/5] cursor-pointer transition-transform duration-700 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] hover:[transform:rotateY(180deg)]">
         {/* front — the portrait tile */}
         <div
-          className="absolute inset-0 flex flex-col justify-between overflow-hidden p-5 transition-opacity duration-300 group-hover:opacity-0"
+          className="absolute inset-0 flex flex-col justify-between overflow-hidden p-5 [backface-visibility:hidden]"
           style={{ background: tile, color: ink }}
         >
           {hasPhoto && (
-            <SafeImg src={m.photo} alt={m.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" decoding="async" />
+            <>
+              <SafeImg src={m.photo} alt={m.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+              <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(8,26,41,0.85)_4%,rgba(8,26,41,0.08)_58%)]" />
+            </>
           )}
           <div className="relative flex items-start justify-between font-mono text-[9px] tracking-[0.26em]" style={{ color: tag }}>
             <span>CREW {String(index + 1).padStart(2, "0")}</span>
@@ -75,10 +78,13 @@ function CrewCard({ m, index, quarter }: { m: TeamMember; index: number; quarter
               </div>
             </div>
           </div>
+          <span className="absolute bottom-2 right-3 font-mono text-[8.5px] tracking-[0.22em]" style={{ color: tag }}>
+            HOVER TO FLIP ⟲
+          </span>
         </div>
 
         {/* back — the story */}
-        <div className="absolute inset-0 flex flex-col border border-[var(--line)] bg-white p-5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+        <div className="absolute inset-0 flex flex-col border border-[var(--line)] bg-white p-5 [backface-visibility:hidden] [transform:rotateY(180deg)]">
           <div className="font-mono text-[9px] tracking-[0.26em] uppercase text-[var(--dim)]">
             Contact sheet · {m.name.split(" ")[0]}
           </div>

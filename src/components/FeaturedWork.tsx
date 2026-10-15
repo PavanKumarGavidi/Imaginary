@@ -40,25 +40,25 @@ export default function FeaturedWork() {
                 <SafeImg
                   src={frame.img}
                   alt={frame.title}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
-                  decoding="async"
                 />
-                {/* Simplified hover overlay - no backdrop blur */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(18,42,62,0.7)] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                
+                {/* Hover overlay - simplified for mobile */}
                 <div className="absolute inset-0 flex items-end p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100 md:p-6">
                   <div>
                     <div className="font-display text-lg text-white md:text-xl lg:text-2xl">{frame.title}</div>
-                    <div className="mt-1 hidden font-mono text-[10px] tracking-[0.18em] uppercase text-white/80 md:block">
+                    <div className="mt-1 hidden font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--photo-ink)]/80 md:block">
                       {frame.exif}
                     </div>
                   </div>
                 </div>
 
-                {/* Category badge - no backdrop blur */}
+                {/* Category badge */}
                 <div className="absolute left-3 top-3 md:left-4 md:top-4">
-                  <div className="rounded-sm bg-black/70 px-2 py-1 md:px-3 md:py-1.5">
-                    <div className="font-mono text-[9px] tracking-[0.2em] uppercase text-white md:text-[10px]">
+                  <div className="rounded-sm bg-[rgba(18,42,62,0.8)] px-2 py-1 backdrop-blur-sm md:px-3 md:py-1.5">
+                    <div className="font-mono text-[9px] tracking-[0.2em] uppercase text-[var(--photo-ink)] md:text-[10px]">
                       {frame.cat}
                     </div>
                   </div>
