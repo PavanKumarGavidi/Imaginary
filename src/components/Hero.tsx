@@ -21,26 +21,9 @@ function Accent({ text, emClass = "italic" }: { text: string; emClass?: string }
   );
 }
 
-/** Rotating badge - desktop only */
-function RotatingBadge() {
-  return (
-    <div className="absolute -bottom-9 -left-9 z-10 hidden h-32 w-32 items-center justify-center md:flex">
-      <svg viewBox="0 0 120 120" className="spin-slow absolute inset-0 h-full w-full">
-        <defs>
-          <path id="obscirc" d="M 60,60 m -46,0 a 46,46 0 1,1 92,0 a 46,46 0 1,1 -92,0" fill="none" />
-        </defs>
-        <text className="font-mono" fontSize="9.5" letterSpacing="2.6" fill="var(--amber)">
-          <textPath href="#obscirc">BOOK A SESSION · IMAGINE STUDIO · EST. 2011 ·&#160;</textPath>
-        </text>
-      </svg>
-      <IconAperture className="text-[var(--ink)]" width={22} height={22} />
-    </div>
-  );
-}
-
 export default function Hero() {
   const reduced = useReducedMotion();
-  const { sitePhotos, content } = useStore();
+  const { content } = useStore();
   const { hero } = content;
   
   const genres = useMemo(
@@ -136,49 +119,35 @@ export default function Hero() {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // DESKTOP/TABLET VERSION - Premium editorial design
+  // DESKTOP/TABLET VERSION - Bold editorial magazine style
   // ═══════════════════════════════════════════════════════════════
   return (
-    <section id="top" className="relative min-h-screen overflow-hidden">
+    <section id="top" className="relative min-h-screen overflow-hidden bg-[var(--bg)]">
       {/* Shutter flash on arrival */}
       {!reduced && flash && (
         <div className="flash-overlay pointer-events-none fixed inset-0 z-[85] bg-white" />
       )}
 
-      {/* Full-bleed hero background with Ken Burns */}
-      <div className="absolute inset-0 z-0">
-        <SafeImg
-          src="https://image.qwenlm.ai/generated-images/b1701b48-0a30-4656-a7ae-bef26f493233/_result.png"
-          alt="Imagine Studio - Professional Photography"
-          className="kenburns h-full w-full object-cover"
-          loading="eager"
-        />
-        {/* Gradient overlays for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[rgba(246,250,253,0.95)] via-[rgba(246,250,253,0.75)] to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(246,250,253,0.9)] via-transparent to-[rgba(246,250,253,0.3)]" />
-      </div>
-
-      {/* Main content */}
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col justify-between px-8 pt-32 pb-16">
-        {/* Top bar - eyebrow and studio info */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="pulse-dot h-2 w-2 rounded-full bg-[var(--amber)]" />
-            <span className="kicker">
-              <ScrambleText text={hero.eyebrow} />
-            </span>
+      {/* Split-screen layout */}
+      <div className="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-2">
+        {/* LEFT SIDE - Massive typography */}
+        <div className="relative flex flex-col justify-between px-8 pt-32 pb-16 lg:px-12 xl:px-16">
+          {/* Top bar */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="pulse-dot h-2 w-2 rounded-full bg-[var(--amber)]" />
+              <span className="kicker">
+                <ScrambleText text={hero.eyebrow} />
+              </span>
+            </div>
+            <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">
+              N° 001
+            </div>
           </div>
-          <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">
-            <IconAperture width={14} height={14} />
-            <span>Est. 2011 · Portland, OR</span>
-          </div>
-        </div>
 
-        {/* Middle section - headline and featured work */}
-        <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-16">
-          {/* Left: Headline and description */}
-          <div className="lg:col-span-7">
-            <h1 className="font-display text-[clamp(3.5rem,7vw,7rem)] leading-[0.92] tracking-tight">
+          {/* Massive headline */}
+          <div className="flex-1 flex flex-col justify-center py-12">
+            <h1 className="font-display text-[clamp(4rem,9vw,9rem)] leading-[0.85] tracking-tighter">
               <span className="mask-line block">
                 <span style={{ animationDelay: "0.1s" }}>{hero.l1}</span>
               </span>
@@ -194,7 +163,7 @@ export default function Hero() {
               </span>
             </h1>
 
-            <p className="mt-8 max-w-xl text-lg leading-relaxed text-[var(--muted)]">
+            <p className="mt-8 max-w-lg text-lg leading-relaxed text-[var(--muted)]">
               {hero.blurb}
             </p>
 
@@ -208,148 +177,94 @@ export default function Hero() {
                 <IconArrow width={17} height={17} className="transition-transform duration-300 group-hover:translate-x-1" />
               </a>
               <a href="#work" className="btn-ghost group">
-                View our work
+                View portfolio
                 <IconArrow width={17} height={17} className="transition-transform duration-300 group-hover:translate-x-1" />
               </a>
             </div>
-
-            {/* EXIF strip - technical photography details */}
-            <div className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--line-soft)] pt-5 font-mono text-[11px] tracking-[0.14em] text-[var(--dim)]">
-              <span className="flex items-center gap-2 text-[var(--amber)]">
-                <IconFlash width={13} height={13} /> REC
-              </span>
-              <span>PORTRA 400</span>
-              <span>85MM</span>
-              <span>f/1.8</span>
-              <span>1/160s</span>
-              <span>ISO 200</span>
-              <span>AWB · RAW+JPEG</span>
-            </div>
           </div>
 
-          {/* Right: Featured work showcase */}
-          <div className="relative lg:col-span-5">
-            <RotatingBadge />
-            
-            {/* Main featured image with viewfinder brackets */}
-            <div className="group relative border border-[var(--line)] bg-[var(--panel)] p-3 shadow-[0_30px_60px_-35px_rgba(18,42,62,0.35)] transition-shadow duration-500 hover:shadow-[0_40px_80px_-40px_rgba(18,42,62,0.5)]">
-              {/* Viewfinder brackets */}
-              <span className="vf-bracket left-0 top-0 border-l-2 border-t-2" />
-              <span className="vf-bracket right-0 top-0 border-r-2 border-t-2" />
-              <span className="vf-bracket bottom-0 left-0 border-b-2 border-l-2" />
-              <span className="vf-bracket bottom-0 right-0 border-b-2 border-r-2" />
-
-              <div className="relative overflow-hidden">
-                <SafeImg
-                  src="https://image.qwenlm.ai/generated-images/c0b9eff8-3185-4a55-a6dc-e9534c2ae032/_result.png"
-                  alt="Featured portrait work"
-                  className="aspect-[4/5] w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  loading="eager"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(18,42,62,0.6)] via-transparent to-transparent" />
-                
-                {/* Image metadata */}
-                <div className="absolute left-3 top-3">
-                  <div className="rounded-sm bg-[rgba(18,42,62,0.8)] px-3 py-1.5 backdrop-blur-sm">
-                    <div className="font-mono text-[10px] tracking-[0.2em] text-[var(--photo-ink)]">
-                      PORTRAIT · 2024
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Bottom info */}
-                <div className="absolute bottom-3 left-3 right-3">
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <div className="font-display text-xl text-white">Elegant Portrait</div>
-                      <div className="mt-1 font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--photo-ink)]/80">
-                        85MM · f/1.8 · PORTRA 400
-                      </div>
-                    </div>
-                    <div className="font-mono text-[10px] tracking-[0.22em] text-[var(--amber)]">
-                      ƒ IMAGINE
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Frame info */}
-              <div className="flex items-center justify-between px-1 pb-1 pt-3">
-                <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-[var(--muted)]">
-                  In-house print · 16×20"
-                </span>
-                <span className="font-mono text-[10px] tracking-[0.22em] text-[var(--amber)]">
-                  FR 01/24
-                </span>
+          {/* Bottom stats */}
+          <div className="grid grid-cols-3 gap-6 border-t border-[var(--line-soft)] pt-8">
+            <div>
+              <div className="font-display text-5xl text-[var(--ink)]">14+</div>
+              <div className="mt-2 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">
+                Years of craft
               </div>
             </div>
-
-            {/* Secondary image - wedding - overlapping */}
-            <div className="absolute -bottom-8 -left-8 hidden w-48 overflow-hidden rounded-sm border border-[var(--line)] bg-[var(--panel)] shadow-[0_20px_40px_-20px_rgba(18,42,62,0.4)] transition-shadow duration-500 hover:shadow-[0_30px_60px_-30px_rgba(18,42,62,0.5)] md:block">
-              <div className="aspect-square overflow-hidden">
-                <SafeImg
-                  src="https://image.qwenlm.ai/generated-images/08b910be-ffff-49ef-a188-0539ad3febbc/_result.png"
-                  alt="Wedding photography"
-                  className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
-                  loading="lazy"
-                />
-              </div>
-              <div className="bg-[var(--panel)] px-3 py-2">
-                <div className="font-mono text-[9px] tracking-[0.18em] uppercase text-[var(--muted)]">
-                  Wedding · Golden Hour
-                </div>
+            <div>
+              <div className="font-display text-5xl text-[var(--ink)]">2.4K</div>
+              <div className="mt-2 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">
+                Sessions
               </div>
             </div>
-
-            {/* Stats - vertical with amber accent */}
-            <div className="absolute -right-12 top-1/2 hidden -translate-y-1/2 xl:block">
-              <div className="space-y-6 border-l-2 border-[var(--amber)] pl-6">
-                <div>
-                  <div className="font-display text-4xl text-[var(--ink)]">14+</div>
-                  <div className="mt-1 font-mono text-[9px] tracking-[0.2em] uppercase text-[var(--dim)]">
-                    Years behind<br />the lens
-                  </div>
-                </div>
-                <div>
-                  <div className="font-display text-4xl text-[var(--ink)]">2,400+</div>
-                  <div className="mt-1 font-mono text-[9px] tracking-[0.2em] uppercase text-[var(--dim)]">
-                    Sessions<br />delivered
-                  </div>
-                </div>
-                <div>
-                  <div className="font-display text-4xl text-[var(--ink)]">96%</div>
-                  <div className="mt-1 font-mono text-[9px] tracking-[0.2em] uppercase text-[var(--dim)]">
-                    Clients who<br />rebook
-                  </div>
-                </div>
+            <div>
+              <div className="font-display text-5xl text-[var(--ink)]">96%</div>
+              <div className="mt-2 font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">
+                Rebook rate
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom - scroll indicator */}
-        <div className="flex items-center justify-between border-t border-[var(--line-soft)] pt-6">
-          <div className="flex items-center gap-2">
-            <div className="h-px w-12 bg-[var(--dim)]" />
-            <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--dim)]">
-              Scroll to explore
-            </span>
+        {/* RIGHT SIDE - Full-bleed image with editorial overlays */}
+        <div className="relative hidden lg:block">
+          {/* Main image */}
+          <div className="absolute inset-0 overflow-hidden">
+            <SafeImg
+              src="https://image.qwenlm.ai/generated-images/b1701b48-0a30-4656-a7ae-bef26f493233/_result.png"
+              alt="Imagine Studio"
+              className="kenburns h-full w-full object-cover"
+              loading="eager"
+            />
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-l from-[rgba(246,250,253,0.3)] via-transparent to-transparent" />
           </div>
-          <div className="animate-bounce">
-            <IconArrow width={20} height={20} className="rotate-90 text-[var(--amber)]" />
+
+          {/* Editorial annotations */}
+          <div className="absolute left-8 top-32 font-mono text-[10px] tracking-[0.3em] uppercase text-white/80">
+            <div className="mb-2">PORTRAIT · 2024</div>
+            <div className="h-px w-12 bg-white/40" />
+          </div>
+
+          <div className="absolute bottom-32 right-8 text-right">
+            <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-white/80">
+              <div>85MM · f/1.8</div>
+              <div>PORTRA 400</div>
+              <div className="mt-2 h-px w-12 ml-auto bg-white/40" />
+            </div>
+          </div>
+
+          {/* Large number overlay */}
+          <div className="absolute right-8 top-1/2 -translate-y-1/2 font-display text-[20rem] leading-none text-white/5">
+            ƒ
+          </div>
+
+          {/* Rotating badge */}
+          <div className="absolute bottom-8 left-8">
+            <div className="relative h-24 w-24">
+              <svg viewBox="0 0 120 120" className="spin-slow absolute inset-0 h-full w-full">
+                <defs>
+                  <path id="badge-circ" d="M 60,60 m -46,0 a 46,46 0 1,1 92,0 a 46,46 0 1,1 -92,0" fill="none" />
+                </defs>
+                <text className="font-mono" fontSize="9" letterSpacing="2.5" fill="white">
+                  <textPath href="#badge-circ">IMAGINE STUDIO · EST. 2011 · PORTLAND ·&#160;</textPath>
+                </text>
+              </svg>
+              <IconAperture className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white" width={24} height={24} />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Genre marquee */}
-      <div className="relative z-10 border-y border-[var(--line-soft)] bg-[rgba(255,255,255,0.95)] py-4 backdrop-blur-sm">
+      {/* Bottom marquee */}
+      <div className="relative z-10 border-t border-[var(--line-soft)] bg-[var(--bg)] py-4">
         <Marquee>
           {genres.map((g, i) => (
             <span key={g} className="mx-5 flex items-center gap-10">
-              <span className={`font-display text-xl tracking-[0.14em] uppercase ${i % 2 ? "text-[var(--amber)]" : "text-[var(--muted)]"}`}>
+              <span className={`font-display text-2xl tracking-[0.14em] uppercase ${i % 2 ? "text-[var(--amber)]" : "text-[var(--muted)]"}`}>
                 {g}
               </span>
-              <IconAperture width={15} height={15} className="text-[var(--dim)]" />
+              <IconAperture width={18} height={18} className="text-[var(--dim)]" />
             </span>
           ))}
         </Marquee>
