@@ -5,6 +5,7 @@ import { initAnalytics, trackPageView } from "./lib/analytics";
 import Nav from "./components/Nav";
 import Hero from "./components/Hero";
 import FeaturedWork from "./components/FeaturedWork";
+import IntroStrip from "./components/IntroStrip";
 import { About, Services } from "./components/Sections";
 import Gallery from "./components/Gallery";
 import TeamSection from "./components/Team";
@@ -239,6 +240,7 @@ function Shell() {
           <Nav onAdmin={goAdmin} />
           <main>
             <Hero />
+            <IntroStrip />
             <FeaturedWork />
             <About />
             <Services onBookSession={(s) => bookWith(s)} />

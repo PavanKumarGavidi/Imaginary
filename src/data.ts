@@ -2,7 +2,10 @@ import type { Booking, TeamMember } from "./store";
 
 /* ————— imagery ————— */
 export const IMG = {
-  hero: "https://image.qwenlm.ai/generated-images/38efb22b-275d-41b2-87d3-20d381b60e09/_result.png",
+  hero: "https://image.qwenlm.ai/generated-images/b1701b48-0a30-4656-a7ae-bef26f493233/_result.png",
+  heroWedding: "https://image.qwenlm.ai/generated-images/c47e28a1-8e02-4765-bcf2-da5540cd07ab/_result.png",
+  heroProduct: "https://image.qwenlm.ai/generated-images/8a642643-a540-45e3-862f-a62316ee4d6e/_result.png",
+  heroHeadshot: "https://image.qwenlm.ai/generated-images/d3956e2e-0921-4bf7-9835-b3555b23d838/_result.png",
   studio: "https://image.qwenlm.ai/generated-images/dd7371bb-a1d8-4fd5-8305-de563b51f96d/_result.png",
   bridal: "https://image.qwenlm.ai/generated-images/36926275-fe9f-4de6-a9fb-d3ac749133f3/_result.png",
   fashion: "https://image.qwenlm.ai/generated-images/b9274cf3-727c-46d5-94a7-7f681624a1d4/_result.png",
