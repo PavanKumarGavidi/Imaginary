@@ -1,0 +1,83 @@
+<!-- IMAGINE · Studio alert — EmailJS template (HTML Content: ON)
+     Settings: To Email = your admin inbox · From Name = Imagine Desk · Reply To = {{reply_to}}
+     Subject: New booking {{booking_ref}} · {{session}} -->
+<div style="margin:0;padding:0;background-color:#eef6fc;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#eef6fc;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+          <!-- header -->
+          <tr>
+            <td style="background-color:#10293e;padding:26px 32px;border-radius:8px 8px 0 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#f2f9fe;letter-spacing:1px;">IMAGINE</td>
+                  <td align="right" style="font-family:'Courier New',monospace;font-size:11px;letter-spacing:3px;color:#7ab8e6;">STUDIO DESK</td>
+                </tr>
+              </table>
+              <div style="margin-top:14px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:4px;color:#7ab8e6;text-transform:uppercase;">New booking in the ledger</div>
+              <div style="margin-top:6px;font-family:Georgia,'Times New Roman',serif;font-size:36px;color:#ffffff;">{{booking_ref}}</div>
+            </td>
+          </tr>
+
+          <!-- body -->
+          <tr>
+            <td style="background-color:#ffffff;padding:28px 32px;">
+              <p style="margin:0 0 20px;font-size:15px;color:#33506b;line-height:1.6;">
+                A new session request just landed on the desk. Confirm it personally within <strong>24 hours</strong> — the client is expecting your reply.
+              </p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;color:#7c93a8;text-transform:uppercase;width:110px;">Client</td>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;font-size:15px;color:#122a3e;font-weight:bold;">{{client_name}}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;color:#7c93a8;text-transform:uppercase;">Email</td>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;font-size:15px;color:#0d7fc2;"><a href="mailto:{{client_email}}" style="color:#0d7fc2;text-decoration:none;">{{client_email}}</a></td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;color:#7c93a8;text-transform:uppercase;">Phone</td>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;font-size:15px;color:#122a3e;">{{client_phone}}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;color:#7c93a8;text-transform:uppercase;">Session</td>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;font-size:15px;color:#122a3e;">{{session}} <span style="color:#7c93a8;">·</span> {{package}}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;color:#7c93a8;text-transform:uppercase;">When</td>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;font-size:15px;color:#122a3e;font-weight:bold;">{{date}} at {{time}} <span style="color:#7c93a8;font-weight:normal;">· {{guests}} guest(s)</span></td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;border-bottom:1px solid #dcebf7;font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;color:#7c93a8;text-transform:uppercase;vertical-align:top;">The brief</td>
+                  <td style="padding:10px 0;border-top:1px solid #dcebf7;border-bottom:1px solid #dcebf7;font-size:15px;color:#33506b;font-style:italic;line-height:1.6;">"{{notes}}"</td>
+                </tr>
+              </table>
+
+              <!-- action -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;background-color:#eef6fc;border-left:4px solid #0d7fc2;">
+                <tr>
+                  <td style="padding:16px 20px;font-size:14px;color:#33506b;line-height:1.6;">
+                    <strong style="color:#122a3e;">Next move:</strong> open the desk → Bookings tab → mark <strong>{{booking_ref}}</strong> confirmed
+                    and send the 30% deposit link. Hit <em>Reply</em> on this email to answer the client directly.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- footer -->
+          <tr>
+            <td style="background-color:#10293e;padding:18px 32px;border-radius:0 0 8px 8px;">
+              <p style="margin:0;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;color:#7ab8e6;text-transform:uppercase;">
+                Sent from the Imagine studio desk · imaginarycapture.netlify.app
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>
